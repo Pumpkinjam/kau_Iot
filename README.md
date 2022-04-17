@@ -1,6 +1,6 @@
 ./task_C
-made by ys230 (¾È¿ë¼ö)
+made by ys230 (ì•ˆìš©ìˆ˜)
 
 
 ./Task07-C 
-made by Pumpkinjam (¹Ú¿µ±Ç)
+made by Pumpkinjam (ë°•ì˜ê¶Œ)
