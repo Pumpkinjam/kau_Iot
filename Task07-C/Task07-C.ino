@@ -21,6 +21,102 @@ unsigned long previousTime = millis();
 const long timeoutTime = 2000;
 int alarmHour, alarmMinute;
 
+// hard coding :(
+void checkHour() {
+    if (header.indexOf("/h0") >= 0) { 
+        alarmHour = 0; 
+    }
+    else if (header.indexOf("/h1") >= 1) { alarmHour = 1; }
+    else if (header.indexOf("/h2") >= 1) { alarmHour = 2; }
+    else if (header.indexOf("/h3") >= 1) { alarmHour = 3; }
+    else if (header.indexOf("/h4") >= 1) { alarmHour = 4; }
+    else if (header.indexOf("/h5") >= 1) { alarmHour = 5; }
+    else if (header.indexOf("/h6") >= 1) { alarmHour = 6; }
+    else if (header.indexOf("/h7") >= 1) { alarmHour = 7; }
+    else if (header.indexOf("/h8") >= 1) { alarmHour = 8; }
+    else if (header.indexOf("/h9") >= 1) { alarmHour = 9; }
+    else if (header.indexOf("/h10") >= 0) { alarmHour = 10; }
+    else if (header.indexOf("/h11") >= 1) { alarmHour = 11; }
+    else if (header.indexOf("/h12") >= 1) { alarmHour = 12; }
+    else if (header.indexOf("/h13") >= 1) { alarmHour = 13; }
+    else if (header.indexOf("/h14") >= 1) { alarmHour = 14; }
+    else if (header.indexOf("/h15") >= 1) { alarmHour = 15; }
+    else if (header.indexOf("/h16") >= 1) { alarmHour = 16; }
+    else if (header.indexOf("/h17") >= 1) { alarmHour = 17; }
+    else if (header.indexOf("/h18") >= 1) { alarmHour = 18; }
+    else if (header.indexOf("/h19") >= 1) { alarmHour = 19; }
+    else if (header.indexOf("/h20") >= 0) { alarmHour = 20; }
+    else if (header.indexOf("/h21") >= 1) { alarmHour = 21; }
+    else if (header.indexOf("/h22") >= 1) { alarmHour = 22; }
+    else if (header.indexOf("/h23") >= 1) { alarmHour = 23; }
+    else { Serial.println("Where's my hour?"); }
+}
+// that's worse X(
+void checkMinute() {
+    if (header.indexOf("/m0") >= 0) {
+        alarmMinute = 0;
+    }
+    else if (header.indexOf("/m1") >= 0) { alarmMinute = 1; }
+    else if (header.indexOf("/m2") >= 0) { alarmMinute = 2; }
+    else if (header.indexOf("/m3") >= 0) { alarmMinute = 3; }
+    else if (header.indexOf("/m4") >= 0) { alarmMinute = 4; }
+    else if (header.indexOf("/m5") >= 0) { alarmMinute = 5; }
+    else if (header.indexOf("/m6") >= 0) { alarmMinute = 6; }
+    else if (header.indexOf("/m7") >= 0) { alarmMinute = 7; }
+    else if (header.indexOf("/m8") >= 0) { alarmMinute = 8; }
+    else if (header.indexOf("/m9") >= 0) { alarmMinute = 9; }
+    else if (header.indexOf("/m10") >= 0) { alarmMinute = 10; }
+    else if (header.indexOf("/m11") >= 0) { alarmMinute = 11; }
+    else if (header.indexOf("/m12") >= 0) { alarmMinute = 12; }
+    else if (header.indexOf("/m13") >= 0) { alarmMinute = 13; }
+    else if (header.indexOf("/m14") >= 0) { alarmMinute = 14; }
+    else if (header.indexOf("/m15") >= 0) { alarmMinute = 15; }
+    else if (header.indexOf("/m16") >= 0) { alarmMinute = 16; }
+    else if (header.indexOf("/m17") >= 0) { alarmMinute = 17; }
+    else if (header.indexOf("/m18") >= 0) { alarmMinute = 18; }
+    else if (header.indexOf("/m19") >= 0) { alarmMinute = 19; }
+    else if (header.indexOf("/m20") >= 0) { alarmMinute = 20; }
+    else if (header.indexOf("/m21") >= 0) { alarmMinute = 21; }
+    else if (header.indexOf("/m22") >= 0) { alarmMinute = 22; }
+    else if (header.indexOf("/m23") >= 0) { alarmMinute = 23; }
+    else if (header.indexOf("/m24") >= 0) { alarmMinute = 24; }
+    else if (header.indexOf("/m25") >= 0) { alarmMinute = 25; }
+    else if (header.indexOf("/m26") >= 0) { alarmMinute = 26; }
+    else if (header.indexOf("/m27") >= 0) { alarmMinute = 27; }
+    else if (header.indexOf("/m28") >= 0) { alarmMinute = 28; }
+    else if (header.indexOf("/m29") >= 0) { alarmMinute = 29; }
+    else if (header.indexOf("/m30") >= 0) { alarmMinute = 30; }
+    else if (header.indexOf("/m31") >= 0) { alarmMinute = 31; }
+    else if (header.indexOf("/m32") >= 0) { alarmMinute = 32; }
+    else if (header.indexOf("/m33") >= 0) { alarmMinute = 33; }
+    else if (header.indexOf("/m34") >= 0) { alarmMinute = 34; }
+    else if (header.indexOf("/m35") >= 0) { alarmMinute = 35; }
+    else if (header.indexOf("/m36") >= 0) { alarmMinute = 36; }
+    else if (header.indexOf("/m37") >= 0) { alarmMinute = 37; }
+    else if (header.indexOf("/m38") >= 0) { alarmMinute = 38; }
+    else if (header.indexOf("/m39") >= 0) { alarmMinute = 39; }
+    else if (header.indexOf("/m40") >= 0) { alarmMinute = 40; }
+    else if (header.indexOf("/m41") >= 0) { alarmMinute = 41; }
+    else if (header.indexOf("/m42") >= 0) { alarmMinute = 42; }
+    else if (header.indexOf("/m43") >= 0) { alarmMinute = 43; }
+    else if (header.indexOf("/m44") >= 0) { alarmMinute = 44; }
+    else if (header.indexOf("/m45") >= 0) { alarmMinute = 45; }
+    else if (header.indexOf("/m46") >= 0) { alarmMinute = 46; }
+    else if (header.indexOf("/m47") >= 0) { alarmMinute = 47; }
+    else if (header.indexOf("/m48") >= 0) { alarmMinute = 48; }
+    else if (header.indexOf("/m49") >= 0) { alarmMinute = 49; }
+    else if (header.indexOf("/m50") >= 0) { alarmMinute = 50; }
+    else if (header.indexOf("/m51") >= 0) { alarmMinute = 51; }
+    else if (header.indexOf("/m52") >= 0) { alarmMinute = 52; }
+    else if (header.indexOf("/m53") >= 0) { alarmMinute = 53; }
+    else if (header.indexOf("/m54") >= 0) { alarmMinute = 54; }
+    else if (header.indexOf("/m55") >= 0) { alarmMinute = 55; }
+    else if (header.indexOf("/m56") >= 0) { alarmMinute = 56; }
+    else if (header.indexOf("/m57") >= 0) { alarmMinute = 57; }
+    else if (header.indexOf("/m58") >= 0) { alarmMinute = 58; }
+    else if (header.indexOf("/m59") >= 0) { alarmMinute = 59; }
+    else { Serial.println("Where's my minute????"); }
+}
 void setup() {
     Serial.begin(115200);
     pinMode(output4, OUTPUT);
@@ -67,10 +163,19 @@ void loop(){
                         client.println("Content-type:text/html");
                         client.println("Connection: close");
                         client.println();
-                        if (header.indexOf("GET /asdf") >= 0) {
-                            Serial.println("button clicked");
-                        }
+                        
+                            bool isFound = false;
+                        if (header.indexOf("GET /set") >= 0) {
+                            Serial.print("alarm set to - ");
+
+                            checkHour();
+                            checkMinute();
+                            
+                            Serial.printf("%d : %d\n", alarmHour, alarmMinute);
+                        } // if (header.indexOf("GET /set") >= 0) {
+
                         printPage(&client);
+                        client.printf("<h2>Alarm was set to %d : %d</h2>\n", alarmHour, alarmMinute);
                         
                         // The HTTP response ends with another blank line
                         client.println();

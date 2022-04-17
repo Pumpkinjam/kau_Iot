@@ -37,7 +37,7 @@ String html2 = R"rawliteral(<form name='setAlarmForm' method='post'>
     <table>
         <tr><td>set time</td> 
             <td>
-                <select name='Hour'> 
+                <select name='Hour' id='Hour'> 
                     <option value="0">0</option> 
                     <option value="1">1</option> 
                     <option value="2">2</option> 
@@ -64,7 +64,7 @@ String html2 = R"rawliteral(<form name='setAlarmForm' method='post'>
                     <option value="23">23</option> 
                 </select> 
                 h
-                <select name='Minute'> 
+                <select name='Minute' id='Minute'> 
                     <option value="0">0</option> 
                     <option value="1">1</option> 
                     <option value="2">2</option> 
@@ -136,7 +136,7 @@ String html2 = R"rawliteral(<form name='setAlarmForm' method='post'>
                 btn.innerHTML = "Set";
                 btn.class = "button";
                 btn.onclick = function() {
-                    location.href = "/asdf";
+                    location.href = "/set/h" + document.getElementById("Hour").value + "/m" + document.getElementById("Minute").value;
                 };
                 document.body.appendChild(btn);
             </script>
