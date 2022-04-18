@@ -1,4 +1,4 @@
-#include "printPage.h"
+#include "Task07-C.h"
 
 //const char* ssid = "KAU-GUEST";
 //const char* password = "";
@@ -41,6 +41,14 @@ void setup() {
 }
 
 void loop(){
+    
+    struct tm ltime;
+    getLocalTime(&ltime);
+
+    if (ltime.tm_hour == alarmHour && ltime.tm_minute == alarmMinute) {
+        
+    }
+
     WiFiClient client = server.available(); // Listen for incoming clients
     if (client) { // If a new client connects,
         currentTime = millis();

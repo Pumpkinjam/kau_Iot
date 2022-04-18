@@ -1,18 +1,4 @@
-#pragma once
-#include <WiFi.h>
-#include "time.h"
-
-struct tm localTime;
-
-struct tm getTime() {
-    struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
-        Serial.println("Failed to obtain time");
-        return timeinfo;
-    }
-
-    return timeinfo;
-}
+#include "Task07-C.h"
 
 String html1 = R"rawliteral(<!DOCTYPE html><html>
 <head>
