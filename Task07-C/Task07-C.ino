@@ -62,7 +62,7 @@ int nDur[] = {2000, 1500, 1000, 750, 500, 375, 250};
 void checkHour();
 void checkMinute();
 int ctoi(char);
-void playNote(int, int, int);
+void playNote(int, int);
 
 
 void setup() {
@@ -111,16 +111,37 @@ void loop(){
             }
             Serial.println();
             */
-            
-            // save data of note, duration, duty
-            for (int idx = 3, z = EEPROM.read(2); idx+2 < z; ) {
-            delay(10);
-            int noteVal = EEPROM.read(idx++);
-            int durVal = EEPROM.read(idx++);
-            int dutyVal = EEPROM.read(idx++);
-            
-            playNote(noteVal, durVal, dutyVal);
-            }
+           
+           /* previous version of music player saved dutyVal
+            * So every (2 + 3n) index is saved to 128 or 0
+            * Updated MusicPlayer doesn't consider that
+            */
+           if (EEPROM.read(5) == 128 || EEPROM.read(8) == 128 || EEPROM.read(11) == 128) {
+               Serial.println("Saved music format version seems to be old.");
+               Serial.println("Music update recommended.");
+               
+               for (int idx = 3, z = EEPROM.read(2); idx+2 < z; ) {
+                    delay(10);
+                    int noteVal = EEPROM.read(idx++);
+                    int durVal = EEPROM.read(idx++);
+
+                    // if read dutyVal is 0, set noteVal to -1
+                    // this makes playNote() set duty to 0
+                    if (!EEPROM.read(idx++)) { noteVal = -1; }
+                    
+                    playNote(noteVal, durVal);
+                }
+           }
+           else { 
+                // save data of note, duration
+                for (int idx = 3, z = EEPROM.read(2); idx+1 < z; ) {
+                    delay(10);
+                    int noteVal = EEPROM.read(idx++);
+                    int durVal = EEPROM.read(idx++);
+                    
+                    playNote(noteVal, durVal);
+                }
+           }
             
         }
         // if there's no score
@@ -227,7 +248,7 @@ int ctoi(char c) {
   return ('0' <= c && c <= '9' ? (int)(c - '0') : ('a' <= c && c <= 'z' ? (int)(c - 'a' + 10) : -1));
 }
 
-void playNote(int note, int dur, int duty) {
+void playNote(int note, int dur) {
   // not a code for user
   if (dur == -1) {
     ledcSetup(ledChannel, 0, resolution);
@@ -235,6 +256,7 @@ void playNote(int note, int dur, int duty) {
     delay(1);
     return;
   }
+  int duty = (note == -1 ? 0 : 128);
   
   ledcSetup(ledChannel, nFrq[note], resolution);
   ledcWrite(ledChannel, duty);
