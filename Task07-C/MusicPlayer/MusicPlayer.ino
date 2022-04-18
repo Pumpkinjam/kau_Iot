@@ -1,5 +1,5 @@
 #include <EEPROM.h>
-#define EEPROM_SIZE 900
+#define EEPROM_SIZE 200
 #define COMMAND_SIZE 300
 
 const int ledChannel = 0;
@@ -51,39 +51,40 @@ int ctoi(char c) {
   return ('0' <= c && c <= '9' ? (int)(c - '0') : ('a' <= c && c <= 'z' ? (int)(c - 'a' + 10) : -1));
 }
 
-void playNote(int note, int dur, int duty) {
-  // not a code for user
-  if (dur == -1) {
-    ledcSetup(ledChannel, 0, resolution);
-    ledcWrite(ledChannel, 0);
-    delay(1);
-    return;
-  }
-  
-  ledcSetup(ledChannel, nFrq[note], resolution);
-  ledcWrite(ledChannel, duty);
-  //Serial.println(duty == 0 ? -1 : note);
-  
-  //Serial.printf("%d %d %d\n", note, dur, duty);
-  delay(nDur[dur]);
+void playNote(int note, int dur) {
+    // not a code for user
+    if (dur == -1) {
+      ledcSetup(ledChannel, 0, resolution);
+      ledcWrite(ledChannel, 0);
+      delay(1);
+      return;
+    }
+
+    int duty = 128;
+    // means ','
+    if (note == -1) {
+      duty = 0
+    }
+    
+    ledcSetup(ledChannel, nFrq[note], resolution);
+    ledcWrite(ledChannel, duty);
+    //Serial.println(duty == 0 ? -1 : note);
+    
+    //Serial.printf("%d %d %d\n", note, dur, duty);
+    delay(nDur[dur]);
+}
+
+void resetScore() {
+  Serial.println("EEPROM set to 0");
+  EEPROM.write(0, 0x00);
+  EEPROM.write(1, 0x00);
+  EEPROM.commit();
 }
 
 void setup() {
   Serial.begin(115200);
   EEPROM.begin(EEPROM_SIZE);
   ledcAttachPin(buzPin, ledChannel);
-
-  Serial.println("setup complete.");
-
-  int asdf = 0;
-  asdf = 1;
-  //code for saving new score
-  if (asdf && EEPROM.read(0) == 0xAA) {
-    Serial.println("EEPROM set to 0");
-    EEPROM.write(0, 0x00);
-    EEPROM.write(1, 0x00);
-    EEPROM.commit();
-  }
 }
 
 void loop(){
@@ -96,7 +97,8 @@ void loop(){
   // saved score found
   if (val1 == 0xAA && val2 == 0x55) {
     //Serial.printf("%x %x\n", val1, EEPROM.read(0));
-    Serial.println("Reading from EEPROM...");
+    Serial.print("Reading from EEPROM...");
+    Serial.println(" (Input '<>' to reset the saved music)");
 
     /*
     Serial.println("saved data is: ");
@@ -108,13 +110,12 @@ void loop(){
     */
     
     // save data of note, duration, duty
-    for (int idx = 3, z = EEPROM.read(2); idx+2 < z; ) {
+    for (int idx = 3, z = EEPROM.read(2); idx+1 < z; ) {
       delay(10);
       int noteVal = EEPROM.read(idx++);
       int durVal = EEPROM.read(idx++);
-      int dutyVal = EEPROM.read(idx++);
       
-      playNote(noteVal, durVal, dutyVal);
+      playNote(noteVal, durVal);
     }
     
   }
@@ -140,27 +141,31 @@ void loop(){
     // save the value if cmdline starts with '<'
     if (line[0] == '<') {
       Serial.println("Saving to EEPROM...");
-      
+      if (line[1] == '>') {
+        Serial.println("Reset EEPROM...");
+        resetScore();
+      }
+      else {
       int romIdx = 3;
-      for (int lineIdx = 1; lineIdx + 2 < len - 1; lineIdx+=2) {
-        int noteVal ,dutyVal = 128, durVal = ctoi(line[lineIdx+1]);
-        if (line[lineIdx] == ',') { noteVal = 0; dutyVal = 0; }
-        else { noteVal = ctoi(line[lineIdx]);}
+        for (int lineIdx = 1; lineIdx + 1 < len - 1; lineIdx+=2) {
+          int noteVal, durVal = ctoi(line[lineIdx+1]);
+          if (line[lineIdx] == ',') { noteVal = -1; }
+          else { noteVal = ctoi(line[lineIdx]);}
 
-        EEPROM.write(romIdx++, noteVal);
-        EEPROM.write(romIdx++, durVal);
-        EEPROM.write(romIdx++, dutyVal);
+          EEPROM.write(romIdx++, noteVal);
+          EEPROM.write(romIdx++, durVal);
+        } 
+        
+        EEPROM.write(0, 0xAA);
+        EEPROM.write(1, 0x55);
+        EEPROM.write(2, romIdx);  // EEPROM(2) means the length of valid values include (0~2)
       }
       
-      EEPROM.write(romIdx, -1);
+      // EEPROM.write(romIdx, -1);
       
-      EEPROM.write(0, 0xAA);
-      EEPROM.write(1, 0x55);
-      EEPROM.write(2, romIdx);  // EEPROM(2) means the length of valid values include (0~2)
       EEPROM.commit();
       
       Serial.println("Saving complete");
-      
     }
     // play withdout saving
     else {
@@ -168,12 +173,12 @@ void loop(){
       Serial.println("Playing...");
       for (int i = 0; i + 1 < len; i+=2) {
         delay(10);
-        int noteVal, dutyVal = 128, durVal = ctoi(line[i+1]);
+        int noteVal, durVal = ctoi(line[i+1]);
         
-        if (line[i] == ',') { noteVal = 0; dutyVal = 0; }
+        if (line[i] == ',') { noteVal = -1; }
         else { noteVal = ctoi(line[i]);}
 
-        playNote(noteVal, durVal, dutyVal);
+        playNote(noteVal, durVal);
     
       }
     }
