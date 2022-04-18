@@ -1,8 +1,8 @@
 #include "Task07-C.h"
 
 // Server Connection variables
-const char* ssid = "SK_WiFi52B9";
-const char* password = "1402007417";
+const char* ssid = "WiFi_ssid";
+const char* password = "WiFi_pw";
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
