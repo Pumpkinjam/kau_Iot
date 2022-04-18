@@ -1,7 +1,6 @@
 #include "Task07-C.h"
 
-//const char* ssid = "KAU-GUEST";
-//const char* password = "";
+// Server Connection variables
 const char* ssid = "SK_WiFi52B9";
 const char* password = "1402007417";
 
@@ -15,12 +14,56 @@ String header;
 unsigned long currentTime = millis();
 unsigned long previousTime = millis();
 const long timeoutTime = 2000;
+
+// alarm variables
 int alarmHour, alarmMinute;
 
+// music playing variables
+const int ledChannel = 0;
+const int resolution = 8;
+const int buzPin = 22;
+
+int nFrq[] = {
+  //0
+  262 /*C*/, 277, 
+  //2
+  294 /*D*/, 311, 
+  //4
+  330 /*E*/, 
+  //5
+  349 /*F*/, 370, 
+  //7
+  392 /*G*/, 415, 
+  //9
+  440 /*A*/, 466, 
+  //b
+  494 /*B*/, 
+  //c
+  523 /*C5*/, 554,
+  //e
+  587 /*D5*/, 622,
+  //g
+  659 /*E5*/,
+  //h
+  698 /*F5*/, 740,
+  //j
+  784 /*G5*/, 831,
+  //l
+  880 /*A5*/, 932,
+  //n
+  988 /*B5*/,
+  //o
+  1047 /*C6*/
+};
+
+int nDur[] = {2000, 1500, 1000, 750, 500, 375, 250};
+
+// functions
 void checkHour();
 void checkMinute();
 int ctoi(char);
 void playNote(int, int, int);
+
 
 void setup() {
     Serial.begin(115200);
@@ -44,12 +87,13 @@ void setup() {
     server.begin();
 }
 
+
 void loop(){
     
     struct tm ltime;
     getLocalTime(&ltime);
 
-    if (ltime.tm_hour == alarmHour && ltime.tm_minute == alarmMinute) {
+    if (ltime.tm_hour == alarmHour && ltime.tm_min == alarmMinute) {
         int val1 = EEPROM.read(0);
         int val2 = EEPROM.read(1);
         playNote(0, -1, 0);
@@ -79,68 +123,13 @@ void loop(){
             }
             
         }
-        // score input mode
+        // if there's no score
         else {
-            Serial.println("No data found. Create new one or play temporarily.");
-
-            // stay until input
-            while (Serial.available() < 1) {
-                delay(10);
-                //Serial.println("Waiting Input...");
-                //delay(1000);
-            }
-
-            // transfer serial input to string
-            int len = 0;
-            while (Serial.available() > 0) {
-                line[len++] = Serial.read();
-            }
-            line[len] = '\0';
-
-
-            // save the value if cmdline starts with '<'
-            if (line[0] == '<') {
-                Serial.println("Saving to EEPROM...");
-                
-                int romIdx = 3;
-                for (int lineIdx = 1; lineIdx + 2 < len - 1; lineIdx+=2) {
-                    int noteVal ,dutyVal = 128, durVal = ctoi(line[lineIdx+1]);
-                    if (line[lineIdx] == ',') { noteVal = 0; dutyVal = 0; }
-                    else { noteVal = ctoi(line[lineIdx]);}
-
-                    EEPROM.write(romIdx++, noteVal);
-                    EEPROM.write(romIdx++, durVal);
-                    EEPROM.write(romIdx++, dutyVal);
-                }
+            Serial.println("It's time to ring, but there's no music to play");
+        }
             
-                EEPROM.write(romIdx, -1);
-                
-                EEPROM.write(0, 0xAA);
-                EEPROM.write(1, 0x55);
-                EEPROM.write(2, romIdx);  // EEPROM(2) means the length of valid values include (0~2)
-                EEPROM.commit();
-                
-                Serial.println("Saving complete");
-            
-            }
-            // play withdout saving
-            else {
-            //Serial.printf("input line : %s\n", line);
-                Serial.println("Playing...");
-                for (int i = 0; i + 1 < len; i+=2) {
-                    delay(10);
-                    int noteVal, dutyVal = 128, durVal = ctoi(line[i+1]);
-                    
-                    if (line[i] == ',') { noteVal = 0; dutyVal = 0; }
-                    else { noteVal = ctoi(line[i]);}
+    } // end of input mode check
 
-                    playNote(noteVal, durVal, dutyVal);
-                }
-            }
-
-            
-        } // end of input mode check
-    }
 
     WiFiClient client = server.available(); // Listen for incoming clients
     if (client) { // If a new client connects,
@@ -212,7 +201,6 @@ void loop(){
     } //** if (client) {
 
 } //** loop() {
-
 
 void checkHour(String str) {
     static int firstSlashIndex = str.indexOf("/");
