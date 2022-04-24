@@ -5,7 +5,7 @@
 #include <Wire.h>
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
-#include "Task09-C.h"
+#include "connection_data.h"
 
 
 AWS_IOT hornbill;
@@ -21,7 +21,7 @@ AWS_IOT hornbill;
  */
 Adafruit_BME280 bme;    // I2C
 
-/* Data below are defined in 'Task09-C.h'
+/* Data below are defined in 'connection_data.h'
  * 
  * const char* ssid = WIFI_SSID;
  * const char* password = WIFI_PW;
