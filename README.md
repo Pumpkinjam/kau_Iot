@@ -1,6 +1,4 @@
-./task_C
-made by ys230 (안용수)
+## Korea Aerospace University IoT - Team 2 Project Repository
+> project files
 
-
-./Task07-C 
-made by Pumpkinjam (박영권)
+> ... and some task files
