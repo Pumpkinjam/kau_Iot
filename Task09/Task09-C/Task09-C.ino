@@ -57,11 +57,14 @@ void setup() {
 
   // Initialize BME280
   bool bme_status;
-  
+
+  Serial.print("Initializing bme280");
   for (int i = 0x00; i <= 0xFF; i++) {
       bme_status = bme.begin(i);
       if (bme_status) {break;}
+      if (!i%4) Serial.print(".");
   }
+  Serial.println();
 
   // if sensorID was not found
   if (!bme_status) {
