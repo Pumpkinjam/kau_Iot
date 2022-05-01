@@ -26,12 +26,12 @@ Adafruit_BME280 bme;    // I2C
  * const char* ssid = WIFI_SSID;
  * const char* password = WIFI_PW;
  * char HOST_ADDRESS[] = AWS_DEVICE_DATA_ENDPOINT;
+ * char CLIENT_ID[] = CLIENT_ID;
+ * char sTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update/delta";
+ * char pTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update";
  * 
  * these are not supposed to be uploaded to github
 */
-char CLIENT_ID[] = "PumpkinjamESP32";
-char sTOPIC_NAME[] = "$aws/things/KAU_Pumpkinjam_ESP32/shadow/update/delta";
-char pTOPIC_NAME[] = "$aws/things/KAU_Pumpkinjam_ESP32/shadow/update";
 
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
@@ -39,6 +39,7 @@ char payload[512];
 char rcvdPayload[512];
 
 const int ledPin = 16;
+bool ledStatus = false;       // this variable shows if led is now ON or OFF
 unsigned long preMil = 0;
 const long intMil = 10000;   // BME280 Cooldown 10s
 
@@ -127,16 +128,21 @@ void loop() {
     Serial.println(rcvdPayload);
 
     // Parse JSON
-    JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "state" : {"desired" : {"led" : "ON" | "OFF"} } }
-    JSONVar state = myObj["state"];             // state has {"desired" : {"led" : "ON" | "OFF"} }
-    JSONVar desired = state["desired"];         // desired has {"led" : "ON" | "OFF"}  
-    String led = (const char*)desired["led"];     // led has "ON" | "OFF"
+    JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { ~~ "state" : {"led" : "ON" | "OFF"} ~~ }
+    JSONVar state = myObj["state"];             // state has {"led" : "ON" | "OFF"}
+    String led = (const char*)state["led"];     // led has "ON" | "OFF"
 
     Serial.print("LED will be ");
     Serial.println(led);
   
-    if (led == "ON") { digitalWrite(ledPin, HIGH); }
-    else { digitalWrite(ledPin, LOW); }
+    if (led == "ON") { 
+      digitalWrite(ledPin, HIGH); ledStatus = true;
+//      hornbill.publish(pTOPIC_NAME, "{\"state\": {\"reported\": {\"led\": \"ON\"} } }");
+    }
+    else { 
+      digitalWrite(ledPin, LOW); ledStatus = false;
+//      hornbill.publish(pTOPIC_NAME, "{\"state\": {\"reported\": {\"led\": \"ON\"} } }");
+    }
   }
 
     // this will be operated every 10 seconds.
@@ -151,8 +157,8 @@ void loop() {
     /* We need to make JSON in this form:
      * { "state" : {
             "reported" : {
-                "temp" : 1415, "humid" : 9265, "press" : 3589, 
-                "yuzu" : "soft", "do a" : "barrel roll"
+                "temp" : 1415, "humid" : 9265, "press" : 3589, "led" : "ON | OFF"
+                "yuzu" : "soft", "do a" : "barrel roll", "nerf" : "this"
             } 
         }
      }
@@ -161,6 +167,7 @@ void loop() {
     bmeValues["temp"] = temp;
     bmeValues["humid"] = humid;
     bmeValues["press"] = press;
+    bmeValues["led"] = ledStatus ? "ON" : "OFF";
     JSONVar reported;
     reported["reported"] = bmeValues;
     JSONVar state;
