@@ -45,13 +45,13 @@ String manage_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0; font-size: 16px;">
         <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#">
             <div>
-                <input type="number" placeholder="ë¹„ë??ë²ˆí˜¸...">
+                <input type="number" placeholder="Password">
             </div>
             <div>
                 <input type="date">
                 <input type="time">
             </div>
-            <button type="submit" value="Value">?„¤? •</button>
+            <button type="submit" value="Value">Set</button>
         </form> 
     </body>
 </html>
