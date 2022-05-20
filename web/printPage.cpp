@@ -1,5 +1,5 @@
 #include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마다 새로고침
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�?
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -17,7 +17,7 @@ String login_html = R"rawliteral(
             <h2 style="width: 100%;">Login</h2>
             <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#">
               <fieldset style="border: none;">
-                <legend style="position: absolute; left: -999em;">로그인</legend>
+                <legend style="position: absolute; left: -999em;">로그?��</legend>
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginid">id</label>
                 <input style="width: 600px; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="text" id="loginid" placeholder="id">
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginpw">password</label>
@@ -25,8 +25,8 @@ String login_html = R"rawliteral(
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#">forgot id/pw?</a></li>  
                 </ul>
-                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="submit" onclick="location.href='http://127.0.0.1:5500/Smart_DoorLock/manage.html?#';location.href='링크';">Login</button>
-              </fieldset>
+                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="location.href='/manage'">Login</button>
+                </fieldset>
             </form>
           </div>
     </body> 
@@ -45,13 +45,13 @@ String manage_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0; font-size: 16px;">
         <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#">
             <div>
-                <input type="number" placeholder="비밀번호...">
+                <input type="number" placeholder="비�??번호...">
             </div>
             <div>
                 <input type="date">
                 <input type="time">
             </div>
-            <button type="submit" value="Value">설정</button>
+            <button type="submit" value="Value">?��?��</button>
         </form> 
     </body>
 </html>

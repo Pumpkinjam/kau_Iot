@@ -1,4 +1,5 @@
 #include "secret.h"
+#include "WiFiData.h"
 #include <AWS_IOT.h>
 #include <WiFi.h>
 #include <Arduino_JSON.h>
@@ -6,12 +7,7 @@
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
 
-
-
-const char* ssid = "KT_GiGA_2G_Wave2_2A43";
-const char* password = "0kg79eh840";
 char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
-
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
