@@ -15,7 +15,7 @@ String login_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
         <div style="width: 780px; height: 550px; margin: 0 auto;" class="loginbox">
             <h2 style="width: 100%;">Login</h2>
-            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#">
+            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#" method="get">
               <fieldset style="border: none;">
                 <legend style="position: absolute; left: -999em;">Î°úÍ∑∏?ù∏</legend>
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginid">id</label>
@@ -25,7 +25,7 @@ String login_html = R"rawliteral(
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#">forgot id/pw?</a></li>  
                 </ul>
-                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="location.href='/manage'">Login</button>
+                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="(function(){location.href='/manage'})()">Login</button>
                 </fieldset>
             </form>
           </div>

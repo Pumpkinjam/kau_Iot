@@ -1,4 +1,5 @@
 #include "secret.h"
+#include "connection_data.h"
 #include "WiFiData.h"
 #include <AWS_IOT.h>
 #include <WiFi.h>
@@ -15,21 +16,66 @@ const int daylightOffset_sec = 0; // 3600
 WiFiServer server(80);
 String header;
 
+/* Data below are defined in 'connection_data.h'
+ * 
+ * const char* ssid = WIFI_SSID;
+ * const char* password = WIFI_PW;
+ * char HOST_ADDRESS[] = AWS_DEVICE_DATA_ENDPOINT;
+ * char CLIENT_ID[] = CLIENT_ID;
+ * char sTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update/delta";
+ * char pTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update";
+ * 
+ * these are not supposed to be uploaded to github
+*/
+
+AWS_IOT hornbill;
+
+int status = WL_IDLE_STATUS;
+int msgCount = 0, msgReceived = 0;
+char payload[512];
+char rcvdPayload[512];
+
+void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
+  // set rcvdPayload(recieved payload) to payload
+  strncpy(rcvdPayload, payLoad, payloadLen);
+  // add null character
+  rcvdPayload[payloadLen] = 0;
+  msgReceived = 1;
+}
+
+String parseId(String str) {
+    int idx_start = str.indexOf("loginid=") + 8;
+    int idx_end = str.indexOf("&");
+    return str.substring(idx_start, idx_end);
+}
+
+String parsePw(String str) {
+    int idx_start = str.indexOf("loginpw=") + 8;
+    int idx_end = str.indexOf(" HTTP") - 1;
+    return str.substring(idx_start, idx_end);
+}
+
 
 void setup() {
     Serial.begin(115200);
 
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
+    // Initialize WIFI
+    Serial.print("WIFI status = ");
+    Serial.println(WiFi.getMode());
+    WiFi.disconnect(true);
+    delay(1000);
     WiFi.mode(WIFI_STA);
+    delay(1000);
+
+    Serial.print("WIFI status = ");
+    Serial.println(WiFi.getMode());
     WiFi.begin(ssid, password);
+    Serial.print("Connecting to WiFi.");
     while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
+        delay(1000);
         Serial.print(".");
     }
-    Serial.println("\nWiFi connected.");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.println("\nConnected to WiFi");
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
@@ -38,7 +84,18 @@ void setup() {
 
 
 void loop(){
+    // when recieved message from subscribed topic
+    // Maybe later, if we need this
+    /*
+    if (msgReceived == 1) {
+        msgReceived = 0;  // Semaphore needed if it's multiprocessor
+        Serial.print("Received Message: ");
+        Serial.println(rcvdPayload);
 
+        // Parse JSON
+        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { ~~ "state" : { ~~ } }
+    }
+    */
     WiFiClient client = server.available(); // Listen for incoming clients
     if (client) { // If a new client connects,
 
@@ -75,7 +132,29 @@ void loop(){
                         }
                         else {
                             printLoginPage(&client);
+                        }
+
+                        // GET /?loginid=admin&loginpw=alpine HTTP/1.1
+                        if (header.indexOf("GET /?loginid") >= 0) {
+                            JSONVar loginValues;
+                            loginValues["id"] = parseId(header);
+                            loginValues["password"] = parsePw(header);
+
+                            JSONVar reported;
+                            reported["reported"] = loginValues;
+                            JSONVar state;
+                            state["state"] = reported;
+
+                            JSON.stringify(state).toCharArray(payload, 512);
+
+                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                                Serial.print("Login Value Published : ");
+                                Serial.println(payload);
+                            }
+                            else {Serial.println("Login Value publish failed. My heart really breaks.");}
                         }      
+
+
                         // The HTTP response ends with another blank line
                         client.println();
                         // Break out of the while loop
