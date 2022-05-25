@@ -1,0 +1,33 @@
+<html>
+    <head>
+        <script defer src="https://pyscript.net/alpha/pyscript.js"></script>
+        <link rel="stylesheet" href="https://pyscript.net/alpha/pyscript.css" />
+        <py-env>
+            - numpy
+            - matplotlib
+        </py-env>
+    </head>
+    <body>
+        <div id="graph"></div>
+        <py-script>
+            import numpy as np
+            print("Wow! Python!")
+
+            n = np.random.randint(10)
+            print(n)
+            print(np.arange(n))
+        </py-script>
+        <!--py-script output="graph">
+            import numpy as np
+            import matplotlib.pyplot as plt
+            
+            x = np.arange(5)
+            y = x ** 2
+            plt.plot(x,y)
+            plt.xlabel('x')
+            plt.ylabel('y')
+            plt.title('My Graph')
+            plt.show()
+        </py-script-->
+    </body>
+</html>
