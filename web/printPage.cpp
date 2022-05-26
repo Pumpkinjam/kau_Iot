@@ -30,6 +30,7 @@ String login_html = R"rawliteral(
           </div>
           <script>
             function tryLogIn() {
+                <!--
                 let id = document.getElementById('loginid').value;
                 let pw = document.getElementById('loginpw').value;
                 if (id == 'admin' && pw == 'alpine') {
@@ -38,6 +39,19 @@ String login_html = R"rawliteral(
                 else {
                     alert('Wrong ID or Password');
                 }
+                -->
+                
+                var xmlHttp = new XMLHttpRequest();
+
+                xmlHttp.onreadystatechange = function () {
+                    if (this.status == 200 && this.readyState == this.DONE) {
+                        console.log(xmlHttp.responseText);
+                    }
+                }
+
+                xmlHttp.open('GET', concat('/?loginid=', id, '&loginpw=', pw, ' HTTP/1.1'), true);
+
+                xmlHttp.send();
             }
           </script>
     </body> 
