@@ -11,7 +11,6 @@ String login_html = R"rawliteral(
         
     </style>
 </head>
-    <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3">       
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
         <div style="width: 780px; height: 550px; margin: 0 auto;" class="loginbox">
             <h2 style="width: 100%;">Login</h2>
@@ -25,10 +24,22 @@ String login_html = R"rawliteral(
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#">forgot id/pw?</a></li>  
                 </ul>
-                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="(function(){location.href='/manage'})()">Login</button>
+                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="tryLogIn();">Login</button>
                 </fieldset>
             </form>
           </div>
+          <script>
+            function tryLogIn() {
+                let id = document.getElementById('loginid').value;
+                let pw = document.getElementById('loginpw').value;
+                if (id == 'admin' && pw == 'alpine') {
+                    location.href = '/manage';
+                }
+                else {
+                    alert('Wrong ID or Password');
+                }
+            }
+          </script>
     </body> 
 </html>
     )rawliteral";
