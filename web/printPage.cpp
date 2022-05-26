@@ -1,5 +1,5 @@
 #include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3Ï¥àÎßà?ã§ ?ÉàÎ°úÍ≥†Ïπ?
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3Ï¥àÎßà?ÔøΩÔøΩ ?ÔøΩÔøΩÎ°úÍ≥†ÔøΩ?
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -11,13 +11,13 @@ String login_html = R"rawliteral(
         
     </style>
 </head>
-    <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3">       
+    <!--meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"-->       
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
         <div style="width: 780px; height: 550px; margin: 0 auto;" class="loginbox">
             <h2 style="width: 100%;">Login</h2>
-            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#" method="get">
+            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action='http://172.30.159.217/' method="get">
               <fieldset style="border: none;">
-                <legend style="position: absolute; left: -999em;">Î°úÍ∑∏?ù∏</legend>
+                <legend style="position: absolute; left: -999em;">Î°úÍ∑∏?ÔøΩÔøΩ</legend>
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginid">id</label>
                 <input style="width: 600px; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="text" id="loginid" placeholder="id">
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginpw">password</label>
@@ -25,7 +25,7 @@ String login_html = R"rawliteral(
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#">forgot id/pw?</a></li>  
                 </ul>
-                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="(function(){location.href='/manage'})()">Login</button>
+                <input style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type='submit' id='loginbutton' value='ÔøΩŒ±ÔøΩÔøΩÔøΩ'>
                 </fieldset>
             </form>
           </div>

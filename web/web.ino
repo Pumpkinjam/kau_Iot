@@ -8,15 +8,13 @@
 #include <Adafruit_BME280.h>
 #include <Adafruit_Sensor.h>
 
-char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
-
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
 const int daylightOffset_sec = 0; // 3600
 WiFiServer server(80);
 String header;
 
-/* Data below are defined in 'connection_data.h'
+/* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
  * 
  * const char* ssid = WIFI_SSID;
  * const char* password = WIFI_PW;
@@ -76,6 +74,8 @@ void setup() {
         Serial.print(".");
     }
     Serial.println("\nConnected to WiFi");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
