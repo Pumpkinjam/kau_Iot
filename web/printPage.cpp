@@ -1,5 +1,5 @@
 #include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�?
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�??
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -11,7 +11,6 @@ String login_html = R"rawliteral(
         
     </style>
 </head>
-    <!--meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"-->       
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
         <div style="width: 780px; height: 550px; margin: 0 auto;" class="loginbox">
             <h2 style="width: 100%;">Login</h2>
@@ -29,6 +28,18 @@ String login_html = R"rawliteral(
                 </fieldset>
             </form>
           </div>
+          <script>
+            function tryLogIn() {
+                let id = document.getElementById('loginid').value;
+                let pw = document.getElementById('loginpw').value;
+                if (id == 'admin' && pw == 'alpine') {
+                    location.href = '/manage';
+                }
+                else {
+                    alert('Wrong ID or Password');
+                }
+            }
+          </script>
     </body> 
 </html>
     )rawliteral";
