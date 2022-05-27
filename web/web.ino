@@ -41,18 +41,23 @@ void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   msgReceived = 1;
 }
 
-String parseId(String str) {
-    int idx_start = str.indexOf("loginid=") + 8;
+String parsePw(String str) {
+    int idx_start = str.indexOf("newpw=") + 6;
     int idx_end = str.indexOf("&");
     return str.substring(idx_start, idx_end);
 }
 
-String parsePw(String str) {
-    int idx_start = str.indexOf("loginpw=") + 8;
-    int idx_end = str.indexOf(" HTTP") - 1;
+String parseTime(String str) {
+    int idx_start = str.indexOf("time=") + 5;
+    int idx_end = idx_start + 14;
     return str.substring(idx_start, idx_end);
 }
 
+String parseUntil(String str) {
+    int idx_start = str.indexOf("until=") + 4;
+    int idx_end = idx_start + 14;
+    return str.substring(idx_start, idx_end);
+}
 
 void setup() {
     Serial.begin(115200);
@@ -134,24 +139,27 @@ void loop(){
                             printLoginPage(&client);
                         }
 
-                        // GET /?loginid=admin&loginpw=alpine HTTP/1.1
-                        if (header.indexOf("GET /?loginid") >= 0) {
-                            JSONVar loginValues;
-                            loginValues["id"] = parseId(header);
-                            loginValues["password"] = parsePw(header);
+                        // GET /?newpw=********&time=yyyymmddhhmmss&until=yyyymmddhhmmss HTTP/1.1
+                        if (header.indexOf("GET /?newpw") >= 0) {
+                            JSONVar pwSettingValues;
+                            pwSettingValues["newpw"] = parsePw(header);
+                            pwSettingValues["time"] = parseTime(header);
+                            pwSettingValues["until"] = parseUntil(header);
 
                             JSONVar reported;
-                            reported["reported"] = loginValues;
+                            reported["reported"] = pwSettingValues;
                             JSONVar state;
                             state["state"] = reported;
 
                             JSON.stringify(state).toCharArray(payload, 512);
 
                             if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
-                                Serial.print("Login Value Published : ");
+                                Serial.print("Published : ");
                                 Serial.println(payload);
                             }
-                            else {Serial.println("Login Value publish failed. My heart really breaks.");}
+                            else {Serial.println("Publish failed. My heart really breaks.");}
+
+                            printManagePage(&client);
                         }      
 
 
