@@ -1,5 +1,5 @@
 #include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3Ï¥àÎßà?ÔøΩÔøΩ ?ÔøΩÔøΩÎ°úÍ≥†Ôø??
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3Ï¥àÎßà?ã§ ?ÉàÎ°úÍ≥†Ïπ?
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -14,9 +14,9 @@ String login_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
         <div style="width: 780px; height: 550px; margin: 0 auto;" class="loginbox">
             <h2 style="width: 100%;">Login</h2>
-            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action='http://172.30.159.217/' method="get">
+            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#" method="get">
               <fieldset style="border: none;">
-                <legend style="position: absolute; left: -999em;">Î°úÍ∑∏?ÔøΩÔøΩ</legend>
+                <legend style="position: absolute; left: -999em;">Î°úÍ∑∏?ù∏</legend>
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginid">id</label>
                 <input style="width: 600px; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="text" id="loginid" placeholder="id">
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginpw">password</label>
@@ -24,13 +24,12 @@ String login_html = R"rawliteral(
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#">forgot id/pw?</a></li>  
                 </ul>
-                <input style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type='submit' id='loginbutton' value='ÔøΩŒ±ÔøΩÔøΩÔøΩ'>
+                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="tryLogIn();">Login</button>
                 </fieldset>
             </form>
           </div>
           <script>
             function tryLogIn() {
-                <!--
                 let id = document.getElementById('loginid').value;
                 let pw = document.getElementById('loginpw').value;
                 if (id == 'admin' && pw == 'alpine') {
@@ -39,19 +38,6 @@ String login_html = R"rawliteral(
                 else {
                     alert('Wrong ID or Password');
                 }
-                -->
-                
-                var xmlHttp = new XMLHttpRequest();
-
-                xmlHttp.onreadystatechange = function () {
-                    if (this.status == 200 && this.readyState == this.DONE) {
-                        console.log(xmlHttp.responseText);
-                    }
-                }
-
-                xmlHttp.open('GET', concat('/?loginid=', id, '&loginpw=', pw, ' HTTP/1.1'), true);
-
-                xmlHttp.send();
             }
           </script>
     </body> 
