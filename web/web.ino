@@ -135,24 +135,22 @@ void loop(){
                         else if (header.indexOf("GET /lcd") >= 0) {
                             printLcdPage(&client);   
                         }
-                        else {
-                            printLoginPage(&client);
-                        }
-
                         // GET /?newpw=********&time=yyyymmddhhmmss&until=yyyymmddhhmmss HTTP/1.1
-                        if (header.indexOf("GET /?newpw") >= 0) {
+                        else if (header.indexOf("GET /?newpw") >= 0) {
                             JSONVar pwSettingValues;
                             pwSettingValues["newpw"] = parsePw(header);
                             pwSettingValues["time"] = parseTime(header);
                             pwSettingValues["until"] = parseUntil(header);
 
-                            JSONVar reported;
-                            reported["reported"] = pwSettingValues;
+                            JSONVar desired;
+                            desired["desired"] = pwSettingValues;
                             JSONVar state;
-                            state["state"] = reported;
+                            state["state"] = desired;
 
                             JSON.stringify(state).toCharArray(payload, 512);
 
+                            Serial.println(payload);
+                            
                             if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
@@ -160,7 +158,10 @@ void loop(){
                             else {Serial.println("Publish failed. My heart really breaks.");}
 
                             printManagePage(&client);
-                        }      
+                        }
+                        else {
+                            printLoginPage(&client);
+                        }
 
 
                         // The HTTP response ends with another blank line
