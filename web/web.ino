@@ -14,14 +14,15 @@ const int daylightOffset_sec = 0; // 3600
 WiFiServer server(80);
 String header;
 
+char sTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update/delta";
+char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update";
+char sTOPIC_ACTION[] = "web/action"
 /* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
  * 
  * const char* ssid = WIFI_SSID;
  * const char* password = WIFI_PW;
  * char HOST_ADDRESS[] = AWS_DEVICE_DATA_ENDPOINT;
  * char CLIENT_ID[] = CLIENT_ID;
- * char sTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update/delta";
- * char pTOPIC_NAME[] = "$aws/things/<Thing_Name>/shadow/update";
  * 
  * these are not supposed to be uploaded to github
 */
@@ -32,6 +33,7 @@ int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
 char payload[512];
 char rcvdPayload[512];
+char cmd[20];
 
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   // set rcvdPayload(recieved payload) to payload
@@ -84,23 +86,38 @@ void setup() {
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
+    if (hornbill.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
+        Serial.println("Connected to AWS");
+        delay(1000);
+
+        if (0 == hornbill.subscribe(sTOPIC_ACTION, mySubCallBackHandler)) {
+        Serial.println("Subscribe Succeed");
+        }
+        else {
+        Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+        while(1);
+        }
+    }
+    else {
+        Serial.println("AWS connection failed, Check the HOST Address");
+        while(1);
+    }
+
     server.begin();
 }
 
 
 void loop(){
-    // when recieved message from subscribed topic
-    // Maybe later, if we need this
-    /*
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
         Serial.print("Received Message: ");
         Serial.println(rcvdPayload);
 
         // Parse JSON
-        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { ~~ "state" : { ~~ } }
+        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "command" : "asdf" }
+        cmd = myObj["command"]
     }
-    */
+
     WiFiClient client = server.available(); // Listen for incoming clients
     if (client) { // If a new client connects,
 
@@ -130,10 +147,13 @@ void loop(){
                     Serial.println(header);
                         
                         if (header.indexOf("GET /manage") >= 0) {
-                            printManagePage(&client);   
+                            client.println(manage_html);  
+                        }
+                        else if (header.indexOf("GET /manage2") >= 0) {
+                            client.println(manage2_html);
                         }
                         else if (header.indexOf("GET /lcd") >= 0) {
-                            printLcdPage(&client);   
+                            client.println(lcd_html);  
                         }
                         // GET /?newpw=********&time=yyyymmddhhmmss&until=yyyymmddhhmmss HTTP/1.1
                         else if (header.indexOf("GET /?newpw") >= 0) {
@@ -157,10 +177,10 @@ void loop(){
                             }
                             else {Serial.println("Publish failed. My heart really breaks.");}
 
-                            printManagePage(&client);
+                            client.println(manage_html);
                         }
                         else {
-                            printLoginPage(&client);
+                            client.println(login_html);
                         }
 
 

@@ -1,5 +1,5 @@
 #include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�?
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�??
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -60,7 +60,7 @@ String manage_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0; font-size: 16px;">
         <form style="width: 100%; height: 450px; padding: 60px; box-sizing: border-box;" action="#">
             <div>
-                비밀번호 : <input id="password" type="number" placeholder="비밀번호..." maxlength="8">
+                비�??번호 : <input id="password" type="number" placeholder="비�??번호..." maxlength="8">
             </div>
             <div>
                 <input id="date" type="date">
@@ -204,15 +204,3 @@ String lcd_html = R"rawliteral(
 </body>
 </html>
 )rawliteral";
-void printLoginPage(WiFiClient* client) {    
-    client->println(login_html);
-}
-void printManagePage(WiFiClient* client) {
-    client->println(manage_html);    
-}
-void printManage2Page(WiFiClient* client) {
-    client->println(manage2_html);
-}
-void printLcdPage(WiFiClient* client) {    
-    client->println(lcd_html);
-}
