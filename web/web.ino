@@ -5,8 +5,6 @@
 #include <WiFi.h>
 #include <Arduino_JSON.h>
 #include <Wire.h>
-#include <Adafruit_BME280.h>
-#include <Adafruit_Sensor.h>
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
