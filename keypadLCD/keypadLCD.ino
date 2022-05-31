@@ -61,7 +61,9 @@ byte colPins[COLS] ={17,16,4,15};
 //byte colPins[COLS] ={16,4,23,15};
 Keypad customKeypad = Keypad(makeKeymap(hexaKeys), rowPins, colPins, ROWS, COLS);
 char keyPressed;
-String doorPassword;
+String inputPassword = "";
+String doorPassword = "";
+String tempPassword = "";
 //String memoryPassword = "12345678";
 
 String val;
@@ -90,15 +92,7 @@ void playNote(int note, int dur) {
   delay(20);
 }
 
-//void save_password(String p){
-//  Serial.println("EEPROM temp save :");
-//  for ( int i = 0; i<p.length(); i++){
-//    EEPROM.write(i, p[i]);  
-//    Serial.print(p[i]); 
-//  }
-//  Serial.println(" ");
-//  EEPROM.commit();
-//}
+
 
 void save_temppassword(String p){
   Serial.println("EEPROM save :");
@@ -110,29 +104,7 @@ void save_temppassword(String p){
   EEPROM.commit();
 }
 
-//void check_password(String p){
-//  Serial.println("saved EEPROM:");
-//  for ( int i = 0; i<8; i++){
-//    val = EEPROM.read(i);
-//    p_val += val;   
-//  }
-//  if (p != p_val){
-//      Serial.println("password error");
-//      sprintf(payload, "Password Error");
-//      playNote(18, 250);
-//  }
-//  else{
-//    playNote(20, 250);
-//    playNote(18, 250);
-//    playNote(17, 125);
-//    playNote(13, 125);
-//    playNote(13, 250);
-//    playNote(18, 400);  
-//    Serial.println("password correct");
-//    Serial.println(p_val);
-//    sprintf(payload, "Door Open!");
-//  } 
-//}
+
 bool pw_compare(String input) {
     int z = EEPROM.read(16);
     
@@ -185,7 +157,7 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
   pinMode(buttonPin, INPUT_PULLUP);
   currentButtonState = digitalRead(buttonPin);
-  save_password("12345678");
+  //save_password("12345678");
   //WIFI connect
   wifi_Connect();
   //AWS connect
@@ -198,6 +170,14 @@ void setup() {
   My_LCD.print("Hello World!");
   Serial.println("Hello World!");
   // Clears The LCD Display
+  if (EEPROM.read(17) == 0XAA && EEPROM.read(18) == 0x55) {
+        for (int i = 0, z = EEPROM.read(16); i < z; i++) {
+            doorPassword += EEPROM.read(i);
+        }
+    }
+   else {
+        Serial.println("Doorlock password is not initialized.");
+   }
   
 }
 
@@ -220,7 +200,7 @@ void loop() {
 
         // Parse JSON
         JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "newpw" : "1234" }
-        char newpw[20] = myObj["newpw"];
+        String newpw = (const char*)myObj["newpw"];
 
         bool isGoodPw = true;
         int len = 0;
@@ -268,17 +248,17 @@ void loop() {
           keyPressed = customKeypad.getKey();
           if(keyPressed>='0' && keyPressed<='9'){
             Serial.print(keyPressed);
-            doorPassword += keyPressed;
+            inputPassword += keyPressed;
             //keyNum = random(13,24);
             playNote(16, 200);
             delay(100);
           }
           if (keyPressed == '#'){
-            doorPassword += '\0';
+            inputPassword += '\0';
             
             Serial.print('\n');
-            Serial.println(doorPassword);
-            if (pw_compare(doorPassword) ) {
+            Serial.println(inputPassword);
+            if (pw_compare(inputPassword) ) {
               playNote(20, 250);
               playNote(18, 250);
               playNote(17, 125);
@@ -296,7 +276,7 @@ void loop() {
             }
             
     
-            doorPassword="";
+            inputPassword="";
             break;
           }
         } 
@@ -323,23 +303,20 @@ void aws_Connect(){
 }
 
 void wifi_Connect(){
-  Serial.print("WIFI status = ");
-  Serial.println(WiFi.getMode());
-  WiFi.disconnect(true);
-  delay(1000);
-  
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
-  WiFi.mode(WIFI_STA);
-  delay(1000);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("\nWiFi connected.");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+  if (hornbill.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
+        Serial.println("Connected to AWS");
+        delay(1000);
 
-  server.begin();
+        if (0 == hornbill.subscribe(sTOPIC_NAME, mySubCallBackHandler)) {
+        Serial.println("Subscribe Succeed");
+        }
+        else {
+        Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+        while(1);
+        }
+    }
+    else {
+        Serial.println("AWS connection failed, Check the HOST Address");
+        while(1);
+   }
 }
