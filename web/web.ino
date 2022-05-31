@@ -13,7 +13,7 @@ WiFiServer server(80);
 String header;
 
 char sTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update/delta";
-char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update";
+char pTOPIC_NAME[] = "web/publish";
 char sTOPIC_ACTION[] = "web/action"
 /* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
  * 
@@ -49,13 +49,15 @@ String parsePw(String str) {
 
 String parseTime(String str) {
     int idx_start = str.indexOf("time=") + 5;
-    int idx_end = idx_start + 14;
+    int idx_end = idx_start + 12;
     return str.substring(idx_start, idx_end);
 }
 
 String parseUntil(String str) {
-    int idx_start = str.indexOf("until=") + 4;
-    int idx_end = idx_start + 14;
+    int idx_start = str.indexOf("until=") + 6;
+    if (str.charAt(idx_start) == '*') { return String("*"); }
+    
+    int idx_end = idx_start + 12;
     return str.substring(idx_start, idx_end);
 }
 
@@ -153,23 +155,19 @@ void loop(){
                         else if (header.indexOf("GET /lcd") >= 0) {
                             client.println(lcd_html);  
                         }
-                        // GET /?newpw=********&time=yyyymmddhhmmss&until=yyyymmddhhmmss HTTP/1.1
+                        // until=* for changing password permanently
+                        // GET /?newpw=********&time=yyyymmddhhmm&until=yyyymmddhhmm HTTP/1.1
                         else if (header.indexOf("GET /?newpw") >= 0) {
                             JSONVar pwSettingValues;
                             pwSettingValues["newpw"] = parsePw(header);
                             pwSettingValues["time"] = parseTime(header);
                             pwSettingValues["until"] = parseUntil(header);
 
-                            JSONVar desired;
-                            desired["desired"] = pwSettingValues;
-                            JSONVar state;
-                            state["state"] = desired;
-
                             JSON.stringify(state).toCharArray(payload, 512);
 
                             Serial.println(payload);
                             
-                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                            if (hornbill.publish("doorlock/setpw", payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }
