@@ -1,6 +1,12 @@
 #include "connection_data.h"
 #include "WiFiData.h"
 #include "AWS_Connect.h"
+#include "time.h"
+
+
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 3600*9; // 3600
+const int daylightOffset_sec = 0; // 3600
 
 sTOPIC_NAME = "doorlock/setpw";
 
@@ -85,6 +91,14 @@ void setup() {
     }
 }
 
+/*
+EEPROM[0 ~ ] : original password
+EEPROM[16] : original password length
+EEPROM[17 & 18] : password was set or not
+EEPROM[19] : 0 if using original password, 1 if using temporary password by time
+EEPROM[20 ~] : temporary password
+EEPROM[36] : temporary password length
+*/
 void loop() {
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
