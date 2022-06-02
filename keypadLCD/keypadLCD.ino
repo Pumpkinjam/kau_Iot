@@ -23,13 +23,13 @@ int msgCount = 0, msgReceived = 0;
 char payload[512];
 char rcvdPayload[512];
 
-const char* ssid = "AndroidHotspot7647";
-const char* password = "merrygoround1!";
-char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
-
-//const char* ssid = "KT_GiGA_2G_Wave2_2A43";
-//const char* password = "0kg79eh840";
+//const char* ssid = "-";
+//const char* password = "-!";
 //char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
+
+const char* ssid = "-";
+const char* password = "-";
+char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 WiFiServer server(80);
 
 // Create An LCD Object. Signals: [ RS, EN, D4, D5, D6, D7 ]
@@ -158,18 +158,16 @@ void setup() {
   pinMode(buttonPin, INPUT_PULLUP);
   currentButtonState = digitalRead(buttonPin);
   //save_password("12345678");
-  //WIFI connect
-  wifi_Connect();
-  //AWS connect
-  aws_Connect();
-  //LCD 출력
+
+  wifi_aws_Connect();
+
   ledcAttachPin(buzPin, ledChannel);
   My_LCD.clear();
   Serial.println("start");
   My_LCD.begin(16, 2);
   My_LCD.print("Hello World!");
   Serial.println("Hello World!");
-  // Clears The LCD Display
+
   if (EEPROM.read(17) == 0XAA && EEPROM.read(18) == 0x55) {
         for (int i = 0, z = EEPROM.read(16); i < z; i++) {
             doorPassword += EEPROM.read(i);
@@ -193,6 +191,7 @@ void loop() {
     if(lastButtonState != currentButtonState){
       lcd_Message(1);
     }
+    
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
         Serial.print("Received Message: ");
@@ -286,37 +285,38 @@ void loop() {
   //lastButtonState = currentButtonState;
 }
 
-void aws_Connect(){
-  // AWS connect
-  if (hornbill.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
-    Serial.println("Connected to AWS");
-    delay(1000);
+void wifi_aws_Connect(){
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
   }
-  else {
-    Serial.println("AWS connection failed, Check the HOST Address");
-    Serial.println("Initialize Failed.");
-    while(1);
+  Serial.println(" CONNECTED");
+//  WiFi.softAP(ssid, password); 
+//  IPAddress IP = WiFi.softAPIP(); 
+//  Serial.print("AP IP address: "); 
+//  Serial.println(IP);
+  #if SWAP
+  WiFi.softAP(ssid, password); 
+  IPAddress IP = WiFi.softAPIP(); 
+  Serial.print("AP IP address: "); 
+  Serial.println(IP);
+  #else
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Connecting to "); 
+  Serial.println(ssid); 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("."); 
   }
+  // Print local IP address and start web server Serial.println("");
+  Serial.println("WiFi connected."); 
+  Serial.println("IP address: "); 
+  Serial.println(WiFi.localIP());
+  #endif
+  server.begin();
   
-  Serial.println("Initialize completed.");
-  delay(2000);
-}
 
-void wifi_Connect(){
-  if (hornbill.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
-        Serial.println("Connected to AWS");
-        delay(1000);
-
-        if (0 == hornbill.subscribe(sTOPIC_NAME, mySubCallBackHandler)) {
-        Serial.println("Subscribe Succeed");
-        }
-        else {
-        Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
-        while(1);
-        }
-    }
-    else {
-        Serial.println("AWS connection failed, Check the HOST Address");
-        while(1);
-   }
 }
