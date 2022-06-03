@@ -24,7 +24,7 @@ char payload[512];
 char rcvdPayload[512];
 
 //const char* ssid = "-";
-//const char* password = "-!";
+//const char* password = "-";
 //char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 
 const char* ssid = "-";
@@ -69,6 +69,19 @@ String tempPassword = "";
 String val;
 String p_val;
 
+//시간 관련 변수
+
+unsigned long timeVal;    //이전 시간
+unsigned long readTime;   //현재 타이머 시간
+char timeStringBuff[50]; //50 chars should be enough
+String tempTimeSet;      //임시 비밀번호 시간 저장
+bool isTemp = false;            //임시 비밀번호가 세팅되었을 때
+
+const char* ntpServer = "kr.pool.ntp.org";
+const long gmtOffset_sec = 3600*9;  //3600
+const int daylightOffset_sec = 0; // 3600
+
+
 int sVal;
 int nFrq[] = {131, 139, 147, 156, 165, 
 175, 262, 277, 294, 311, 
@@ -82,7 +95,7 @@ unsigned long preMil = 0;
 const long intMil = 5000;
 
 void playNote(int note, int dur) { 
-  duty = 0;
+  //duty = 0;
   ledcSetup(ledChannel, nFrq[note], resolution); 
   
   ledcWrite(ledChannel, duty); 
@@ -92,11 +105,19 @@ void playNote(int note, int dur) {
   delay(20);
 }
 
+void load_password(){
+  int z = EEPROM.read(16);
+    
+    for (int i = 0; i < z; i++) {
+      doorPassword += EEPROM.read(i);
+    }
+}
 
-
-void save_temppassword(String p){
+void save_password(String p, int len){
   Serial.println("EEPROM save :");
-  for ( int i = 16; i< 16 + p.length(); i++){
+  EEPROM.write(16, len);
+  
+  for ( int i = 0; i< len; i++){
     EEPROM.write(i, p[i]);  
     Serial.print(p[i]); 
   }
@@ -114,33 +135,14 @@ bool pw_compare(String input) {
     return input.charAt(z) == '\0';
 }
 
-void lcd_Message(int num){
-  if (num == 1){
-    My_LCD.clear();
-    Serial.println("start");
-    My_LCD.begin(16, 2);
-    My_LCD.print("1");
-  }
-  else if (num == 2){
-    My_LCD.clear();
-    Serial.println("start");
-    My_LCD.begin(16, 2);
-    My_LCD.print("2");
-  }
-  else if (num == 3){
-    My_LCD.clear();
-    Serial.println("start");
-    My_LCD.begin(16, 2);
-    My_LCD.print("3");
+bool check_time(String t){
+  if (timeStringBuff[16] == t[10] &&timeStringBuff[17] == t[11]){
+    return true;  
   }
   else{
-    My_LCD.clear();
-    Serial.println("start");
-    My_LCD.begin(16, 2);
-    My_LCD.print("4");
+    return false;
   }
 }
-
 
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   // set rcvdPayload(recieved payload) to payload
@@ -149,7 +151,18 @@ void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   rcvdPayload[payloadLen] = 0;
   msgReceived = 1;
 }
-
+void printLocalTime()
+{
+  struct tm timeinfo; 
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time"); 
+    return;
+  } 
+  //timeinfo를 string값으로
+  strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
+  String asString(timeStringBuff);
+  
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -157,10 +170,13 @@ void setup() {
   EEPROM.begin(EEPROM_SIZE);
   pinMode(buttonPin, INPUT_PULLUP);
   currentButtonState = digitalRead(buttonPin);
+  
   //save_password("12345678");
 
   wifi_aws_Connect();
-
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
+  printLocalTime();
+  
   ledcAttachPin(buzPin, ledChannel);
   My_LCD.clear();
   Serial.println("start");
@@ -185,12 +201,15 @@ void loop() {
   lastButtonState = currentButtonState;
   currentButtonState = digitalRead(buttonPin);
   keyPressed = customKeypad.getKey();
-  
-    
+  printLocalTime();
+
+  if(millis()-timeVal >= 60000){
+    readTime = millis()/60000;
+    Serial.println("1분 경과, 현재 시간: ");
+    Serial.println(timeStringBuff);
+    timeVal = millis();
+  }
   if ( (millis()-preMil) > intMil){
-    if(lastButtonState != currentButtonState){
-      lcd_Message(1);
-    }
     
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
@@ -198,8 +217,11 @@ void loop() {
         Serial.println(rcvdPayload);
 
         // Parse JSON
-        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "newpw" : "1234" }
-        String newpw = (const char*)myObj["newpw"];
+        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "newpw" : "1234", "lcd" : "a", "time" : "202206062349" }
+        const char* newpw = (const char*)myObj["newpw"];
+        const char* lcdmsg = (const char*)myObj["lcd"];
+        const char* timeset = (const char*)myObj["time"];
+        
 
         bool isGoodPw = true;
         int len = 0;
@@ -215,29 +237,66 @@ void loop() {
                 Serial.println("Password reset failed : length over 16");
                 isGoodPw = false; break;
             }
-        }
-        
+        }        
         // password length is saved at EEPROM[16]
         // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55
-        if (isGoodPw) {
+        
+
+        // lcd 메시지 출력
+        if (lcdmsg == "a"){
+          My_LCD.clear();
+          Serial.println("start");
+          My_LCD.begin(16, 2);
+          My_LCD.print("1");
+        }
+        else if (lcdmsg == "b"){
+          My_LCD.clear();
+          Serial.println("start");
+          My_LCD.begin(16, 2);
+          My_LCD.print("2");          
+        }
+        else if (lcdmsg == "c"){
+          My_LCD.clear();
+          Serial.println("start");
+          My_LCD.begin(16, 2);
+          My_LCD.print("3");          
+        }
+        else{
+          My_LCD.clear();
+          Serial.println("start");
+          My_LCD.begin(16, 2);
+          My_LCD.print("4");          
+        }
+        //비밀번호 영구 변경 - timeset이 0이면
+        if (isGoodPw && timeset == "0") {
             EEPROM.write(16, len);
             for (int i = 0; i < len; i++) {
                 EEPROM.write(i, newpw[i]);
             }
             Serial.println("Password reset succeed.");
         }
+       // 임시 비밀번호 시간 설정
+        if (timeset != "0" && isGoodPw && !isTemp){
+          //변수에 저장
+          tempTimeSet = timeset;
+          isTemp = true;
+          Serial.println("tempPasswordSet");
+          doorPassword = newpw;
+          Serial.println(timeStringBuff);
+                    
+         }
+      // 임시 비밀번호 시간이 다 되면
+        if (isTemp && check_time(tempTimeSet) ){
+          Serial.println("temp time over. original password set");
+          isTemp = false;
+          load_password();
+        }
+      }      
     }
 
 
     
-    if (0 == hornbill.subscribe(sTOPIC_NAME, mySubCallBackHandler)) {
-        Serial.println("Subscribe Succeed");
-      }
-      else {
-        Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
-        Serial.println("Initialize Failed.");
-        while(1);
-      }
+
     if (keyPressed != NO_KEY) {
       if(keyPressed == '*'){
         playNote(16, 200);
@@ -273,17 +332,16 @@ void loop() {
               playNote(18, 250);
 
             }
-            
-    
+  
             inputPassword="";
             break;
           }
         } 
       } 
     }
-  }
-  //lastButtonState = currentButtonState;
 }
+  //lastButtonState = currentButtonState;
+
 
 void wifi_aws_Connect(){
   WiFi.begin(ssid, password);
@@ -317,6 +375,4 @@ void wifi_aws_Connect(){
   Serial.println(WiFi.localIP());
   #endif
   server.begin();
-  
-
 }
