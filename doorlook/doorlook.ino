@@ -8,7 +8,7 @@ const char* ssid = "SK_WiFi67AD";
 const char* password = "1102000710";
 char HOST_ADDRESS[]= "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 char CLIENT_ID[]= "KAU_MOTOR";
-char sTOPIC_NAME[]= "esp32_doorlock"; // subscribe topic name
+char sTOPIC_NAME[]= "doormotor"; // subscribe topic name
 char pTOPIC_NAME[]= "esp32/doorlock"; // publish topic name
 int status = WL_IDLE_STATUS;
 int msgCount=0,msgReceived = 0;
@@ -36,7 +36,7 @@ void MOTOR(int door){ // 1은 열림 0은 닫힘
     servo1.write(0);
     delay(1000);
     servo1.write(90);
-    
+    while
   }
   
 }
