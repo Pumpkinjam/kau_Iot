@@ -2,7 +2,6 @@
 #include "connection_data.h"
 #include "WiFiData.h"
 #include <AWS_IOT.h>
-#include <WiFi.h>
 #include <Arduino_JSON.h>
 #include <Wire.h>
 
@@ -12,9 +11,8 @@ const int daylightOffset_sec = 0; // 3600
 WiFiServer server(80);
 String header;
 
-char sTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update/delta";
-char pTOPIC_NAME[] = "web/publish";
-char sTOPIC_ACTION[] = "web/action"
+char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update";
+char sTOPIC_IMAGE[] = "web/image";
 /* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
  * 
  * const char* ssid = WIFI_SSID;
@@ -29,8 +27,8 @@ AWS_IOT hornbill;
 
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
-char payload[512];
-char rcvdPayload[512];
+char payload[100];
+char rcvdPayload[600];
 char cmd[20];
 
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
@@ -41,25 +39,50 @@ void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   msgReceived = 1;
 }
 
+int getTmp(String str) {
+    int idx_start = str.indexOf("tmp=") + 4;
+    return str.substring(idx_start, idx_start+1).toInt();
+}
+
 String parsePw(String str) {
+    if (!getTmp(str)) {
+        return String("");
+    }
     int idx_start = str.indexOf("newpw=") + 6;
     int idx_end = str.indexOf("&");
     return str.substring(idx_start, idx_end);
 }
 
-String parseTime(String str) {
-    int idx_start = str.indexOf("time=") + 5;
-    int idx_end = idx_start + 12;
-    return str.substring(idx_start, idx_end);
+// yyyy-mm-dd
+String parseDate(String str) {
+    if (!getTmp(str)) {
+        return String("");
+    }
+    int idx_start = str.indexOf("date=") + 5;
+    int idx_end = idx_start + 10;
+
+    return str.substring(idx_start, idx_start+4) + str.substring(idx_start+5, idx_start+7) + str.substring(idx_start+8, idx_end);
 }
 
-String parseUntil(String str) {
-    int idx_start = str.indexOf("until=") + 6;
-    if (str.charAt(idx_start) == '*') { return String("*"); }
-    
-    int idx_end = idx_start + 12;
-    return str.substring(idx_start, idx_end);
+// hh:mm
+String parseTime(String str) {
+    if (!getTmp(str)) {
+        return String("");
+    }
+    int idx_start = str.indexOf("time=") + 5;
+    int idx_end = idx_start + 5;
+    return str.substring(idx_start, idx_start+2) + str.substring(idx_start+3, idx_end);
 }
+
+String parseLcd(String str) {
+    if (getTmp(str)) {
+        return String("");
+    }
+
+    int idx_start = str.indexOf("lcd=") + 4;
+    return str.substring(idx_start, str.indexOf("&tmp="));
+}
+
 
 void setup() {
     Serial.begin(115200);
@@ -90,7 +113,7 @@ void setup() {
         Serial.println("Connected to AWS");
         delay(1000);
 
-        if (0 == hornbill.subscribe(sTOPIC_ACTION, mySubCallBackHandler)) {
+        if (0 == hornbill.subscribe(sTOPIC_IMAGE, mySubCallBackHandler)) {
         Serial.println("Subscribe Succeed");
         }
         else {
@@ -114,8 +137,7 @@ void loop(){
         Serial.println(rcvdPayload);
 
         // Parse JSON
-        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "command" : "asdf" }
-        cmd = myObj["command"]
+        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "base64image" : "~~~" }
     }
 
     WiFiClient client = server.available(); // Listen for incoming clients
@@ -146,28 +168,34 @@ void loop(){
                     Serial.print("Header is ");
                     Serial.println(header);
                         
-                        if (header.indexOf("GET /manage") >= 0) {
-                            client.println(manage_html);  
+                        if (header.indexOf("GET /manage2") >= 0) {
+                            Serial.println(header.indexOf("\n\nGET /manage2\n\n"));
+                            client.println(manage2_html);  
                         }
-                        else if (header.indexOf("GET /manage2") >= 0) {
-                            client.println(manage2_html);
+                        else if (header.indexOf("GET /manage") >= 0) {
+                            client.println(manage_html);
                         }
                         else if (header.indexOf("GET /lcd") >= 0) {
                             client.println(lcd_html);  
                         }
                         // until=* for changing password permanently
-                        // GET /?newpw=********&time=yyyymmddhhmm&until=yyyymmddhhmm HTTP/1.1
-                        else if (header.indexOf("GET /?newpw") >= 0) {
+                        // POST /newpw=********&date=yyyy-mm-dd&time=hh:mm&lcd=n&tmp=k HTTP/1.1
+                        else if (header.indexOf("POST /newpw") >= 0) {
                             JSONVar pwSettingValues;
                             pwSettingValues["newpw"] = parsePw(header);
-                            pwSettingValues["time"] = parseTime(header);
-                            pwSettingValues["until"] = parseUntil(header);
+                            pwSettingValues["time"] = parseDate(header) + parseTime(header);
+                            pwSettingValues["lcd"] = parseLcd(header);
+                            pwSettingValues["tmp"] = getTmp(header);
+                            JSONVar reported;
+                            reported["reported"] = pwSettingValues;
+                            JSONVar state;
+                            state["state"] = reported;
 
                             JSON.stringify(state).toCharArray(payload, 512);
 
                             Serial.println(payload);
                             
-                            if (hornbill.publish("doorlock/setpw", payload) == 0) {
+                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }

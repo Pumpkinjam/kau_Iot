@@ -1,5 +1,5 @@
-#include "secret.h"
-// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�??
+/*#include "secret.h"
+// <meta http-equiv="refresh" content="3"><meta http-equiv="refresh" content="3"> 3초마?�� ?��로고�???
 String login_html = R"rawliteral(
 <!DOCTYPE html>
 <html>
@@ -60,7 +60,7 @@ String manage_html = R"rawliteral(
     <body style="background-color: #ededed; padding: 0; margin: 0; font-size: 16px;">
         <form style="width: 100%; height: 450px; padding: 60px; box-sizing: border-box;" action="#">
             <div>
-                비�??번호 : <input id="password" type="number" placeholder="비�??번호..." maxlength="8">
+                비�??번호 : <input id="password" type="number" placeholder="비�??번호..." maxlength="8">
             </div>
             <div>
                 <input id="date" type="date">
@@ -69,7 +69,7 @@ String manage_html = R"rawliteral(
             <div id="result1">-</div>
             <div id="result2">-</div>
             <div id="result3">-</div>
-            <button id="btn" onclick="submit()" type="submit" value="Value">submit</button>
+            <button id="btn" onclick="submit();" type="submit" value="Value">submit</button>
         </form> 
 
         <script>
@@ -156,7 +156,7 @@ String lcd_html = R"rawliteral(
          text-align: center;
        }
        .form-check {
-         /* border: 1px solid #cccccc; */
+         // border: 1px solid #cccccc;
          width: 130px;
          position: relative;
          left: 50%;
@@ -203,4 +203,4 @@ String lcd_html = R"rawliteral(
   </script>
 </body>
 </html>
-)rawliteral";
+)rawliteral";*/
