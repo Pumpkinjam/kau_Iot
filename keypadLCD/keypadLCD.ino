@@ -22,7 +22,7 @@ char payload[512];
 char rcvdPayload[512];
 
 //const char* ssid = "-";
-//const char* password = "-";
+//const char* password = "-!";
 //char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 
 const char* ssid = "-";
@@ -114,7 +114,7 @@ void load_password(){
 void save_password(String p, int len){
   Serial.println("EEPROM save :");
   EEPROM.write(16, len);
-  
+  EEPROM.commit();
   for ( int i = 0; i< len; i++){
     EEPROM.write(i, p[i]);  
     Serial.print(p[i]); 
@@ -214,14 +214,16 @@ void wifi_aws_Connect(){
 }
 
 void setup() {
-  EEPROM.write(17, 0XAA);
-  EEPROM.write(18, 0X55);
   // put your setup code here, to run once:
   Serial.begin(115200);
   EEPROM.begin(EEPROM_SIZE);
   pinMode(buttonPin, INPUT_PULLUP);
   currentButtonState = digitalRead(buttonPin);
-  
+
+  //초기값 지정
+  EEPROM.write(17, 0XAA);
+  EEPROM.write(18, 0X55);
+  EEPROM.commit();
   save_password("12345678", 8);
 
   wifi_aws_Connect();
@@ -237,13 +239,15 @@ void setup() {
 
   if (EEPROM.read(17) == 0XAA && EEPROM.read(18) == 0x55) {
         for (int i = 0, z = EEPROM.read(16); i < z; i++) {
-            doorPassword += EEPROM.read(i);
+            doorPassword += EEPROM.read(i) - '0';
+            Serial.print("door Password : ");
+            Serial.println(doorPassword);
         }
     }
    else {
         Serial.println("Doorlock password is not initialized.");
         //임의
-        doorPassword = "12345678";
+        //doorPassword = "12345678";
    }
   
 }
@@ -377,7 +381,7 @@ void loop() {
                 playNote(18, 400);
   
                 door = 1;
-                Serial.println("password correct");
+                Serial.println("password correct : ");
                 sprintf(payload, "Password correct!");
   
                 JSON.stringify(doorState).toCharArray(payload, 512);
@@ -394,7 +398,9 @@ void loop() {
                 playNote(18, 250);
   
                 door = 0;
-                Serial.println("password error");
+                Serial.println("password error : ");
+                Serial.println(doorPassword);
+                Serial.println(inputPassword);
                 
                 JSON.stringify(doorState).toCharArray(payload, 512);
                 sprintf(payload, "Password Error!");
