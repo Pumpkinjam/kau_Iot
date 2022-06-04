@@ -9,17 +9,15 @@ const char* ssid = "SK_WiFi67AD";
 const char* password = "1102000710";
 char HOST_ADDRESS[]= "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 char CLIENT_ID[]= "KAU_MOTOR";
-char sTOPIC_NAME[]= "doormotor"; // subscribe topic name
-char pTOPIC_NAME[]= "esp32/doorlock"; // publish topic name
+char sTOPIC_NAME[]= "ESP32/Doorlock"; // subscribe topic name
+char pTOPIC_NAME[]= "esp32/doorsensor"; // publish topic name
 int status = WL_IDLE_STATUS;
 int msgCount=0,msgReceived = 0;
 char payload[512];
 char rcvdPayload[512];
 unsigned long preMil = 0; 
 const long intMil = 5000;
-static const int servoPin = 33;
-
-int a = 0; //////////////////////////////////////////////////////// 임시 변수 1= 도어락을 여세요; 2 = 도어락을 잠구세요 3 = 문 열려있음, 4 = 문 닫혀있음 
+static const int servoPin = 33; 
 
 #define sensor 33
 #define Door_sensor 25
@@ -85,19 +83,21 @@ void loop() {
 // Parse JSON
     JSONVar myObj = JSON.parse(rcvdPayload);
     JSONVar state = myObj["state"];
-    String doormotor = (const char*) state["doormotor"];
+    String doormotor = (const char*) state["doormotor"]; // esp32/doorset 
     if (doormotor == "OPEN"){MOTOR(1);}
     else if (doormotor == "ClOSE"){MOTOR(0);}
+    Serial.println(doormotor);
   }
   if ((millis() - preMil) > intMil) {
     preMil = millis();
-    JSONVar bmeValues;
-    bmeValues["doorsensor"] = digitalRead(Door_sensor);
-    JSONVar reported;
-    reported["reported"] = bmeValues;
     JSONVar state;
-    state["state"] = reported;
+    state["door_sensor"] = digitalRead(Door_sensor); //esp32/doorsensor
     JSON.stringify(state).toCharArray(payload, 512);
-   
+    
+    if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
+      Serial.print("Publish Message: ");
+      Serial.println(payload);
+    }
+    else { Serial.println("Oops, Publish Failed."); }
   }
 }
