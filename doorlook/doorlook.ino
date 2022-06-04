@@ -1,6 +1,7 @@
 #include <AWS_IOT.h>
 #include <WiFi.h>
 #include <ESP32_Servo.h>
+#include <Arduino_JSON.h>
 
 Servo servo1;
 AWS_IOT MOTORIOT;
@@ -97,10 +98,6 @@ void loop() {
     JSONVar state;
     state["state"] = reported;
     JSON.stringify(state).toCharArray(payload, 512);
-    if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
-      Serial.print("Publish Message: ");
-      Serial.println(payload);
-    }
-    else { Serial.println("Oops, Publish Failed."); }
+   
   }
 }
