@@ -4,15 +4,13 @@
 #include <WiFi.h>
 #include <Arduino_JSON.h>
 #include <Wire.h>
-#include <Adafruit_BME280.h>
-#include <Adafruit_Sensor.h>
 #include <EEPROM.h>
 #define EEPROM_SIZE 1024
 #define SWAP 0 // sw access point
 #include <AWS_IOT.h>
 //#include "secret.h"
 
-AWS_IOT hornbill;
+AWS_IOT aws;
 
 char CLIENT_ID[] = "ysESP32";
 char sTOPIC_NAME[] = "esp32/lcd";
@@ -81,7 +79,7 @@ const char* ntpServer = "kr.pool.ntp.org";
 const long gmtOffset_sec = 3600*9;  //3600
 const int daylightOffset_sec = 0; // 3600
 
-
+int door = 2;
 int sVal;
 int nFrq[] = {131, 139, 147, 156, 165, 
 175, 262, 277, 294, 311, 
@@ -164,14 +162,67 @@ void printLocalTime()
   
 }
 
+void wifi_aws_Connect(){
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println(" CONNECTED");
+//  WiFi.softAP(ssid, password); 
+//  IPAddress IP = WiFi.softAPIP(); 
+//  Serial.print("AP IP address: "); 
+//  Serial.println(IP);
+  #if SWAP
+  WiFi.softAP(ssid, password); 
+  IPAddress IP = WiFi.softAPIP(); 
+  Serial.print("AP IP address: "); 
+  Serial.println(IP);
+  #else
+  // Connect to Wi-Fi network with SSID and password
+  Serial.print("Connecting to "); 
+  Serial.println(ssid); 
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print("."); 
+  }
+  // Print local IP address and start web server Serial.println("");
+  Serial.println("WiFi connected."); 
+  Serial.println("IP address: "); 
+  Serial.println(WiFi.localIP());
+  #endif
+  server.begin();
+  
+  if (aws.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
+    Serial.println("Connected to AWS");
+    delay(1000);
+
+    if (0 == aws.subscribe(sTOPIC_NAME, mySubCallBackHandler)) {
+      Serial.println("Subscribe Succeed");
+    }
+    else {
+      Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
+      while(1);
+    }
+  }
+  else {
+    Serial.println("AWS connection failed, Check the HOST Address");
+    while(1);
+  }
+}
+
 void setup() {
+  EEPROM.write(17, 0XAA);
+  EEPROM.write(18, 0X55);
   // put your setup code here, to run once:
   Serial.begin(115200);
   EEPROM.begin(EEPROM_SIZE);
   pinMode(buttonPin, INPUT_PULLUP);
   currentButtonState = digitalRead(buttonPin);
   
-  //save_password("12345678");
+  save_password("12345678", 8);
 
   wifi_aws_Connect();
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
@@ -191,6 +242,8 @@ void setup() {
     }
    else {
         Serial.println("Doorlock password is not initialized.");
+        //임의
+        doorPassword = "12345678";
    }
   
 }
@@ -210,6 +263,8 @@ void loop() {
     timeVal = millis();
   }
   if ( (millis()-preMil) > intMil){
+    JSONVar doorState;
+    doorState["door"] = door;
     
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
@@ -221,6 +276,7 @@ void loop() {
         const char* newpw = (const char*)myObj["newpw"];
         const char* lcdmsg = (const char*)myObj["lcd"];
         const char* timeset = (const char*)myObj["time"];
+        
         
 
         bool isGoodPw = true;
@@ -239,8 +295,7 @@ void loop() {
             }
         }        
         // password length is saved at EEPROM[16]
-        // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55
-        
+        // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55       
 
         // lcd 메시지 출력
         if (lcdmsg == "a"){
@@ -291,88 +346,78 @@ void loop() {
           isTemp = false;
           load_password();
         }
-      }      
-    }
+      }
 
-
-    
-
-    if (keyPressed != NO_KEY) {
-      if(keyPressed == '*'){
-        playNote(16, 200);
-        playNote(12, 200);
-        Serial.println("password input start");
-        while(1){
-          keyPressed = customKeypad.getKey();
-          if(keyPressed>='0' && keyPressed<='9'){
-            Serial.print(keyPressed);
-            inputPassword += keyPressed;
-            //keyNum = random(13,24);
-            playNote(16, 200);
-            delay(100);
-          }
-          if (keyPressed == '#'){
-            inputPassword += '\0';
-            
-            Serial.print('\n');
-            Serial.println(inputPassword);
-            if (pw_compare(inputPassword) ) {
-              playNote(20, 250);
-              playNote(18, 250);
-              playNote(17, 125);
-              playNote(13, 125);
-              playNote(13, 250);
-              playNote(18, 400);  
-              Serial.println("password correct");
-              sprintf(payload, "Door Open!");
+      if (keyPressed != NO_KEY) {
+        
+        if(keyPressed == '*'){
+          playNote(16, 200);
+          playNote(12, 200);
+          Serial.println("password input start");
+          while(1){
+            keyPressed = customKeypad.getKey();
+            if(keyPressed>='0' && keyPressed<='9'){
+              Serial.print(keyPressed);
+              inputPassword += keyPressed;
+              //keyNum = random(13,24);
+              playNote(16, 200);
+              delay(100);
             }
-            else{
-              Serial.println("password error");
-              sprintf(payload, "Password Error");
-              playNote(18, 250);
-
-            }
+            if (keyPressed == '#'){
+              inputPassword += '\0';
+              
+              Serial.print('\n');
+              Serial.println(inputPassword);
+              if (doorPassword == inputPassword) {
+                playNote(20, 250);
+                playNote(18, 250);
+                playNote(17, 125);
+                playNote(13, 125);
+                playNote(13, 250);
+                playNote(18, 400);
   
-            inputPassword="";
-            break;
-          }
-        } 
-      } 
-    }
+                door = 1;
+                Serial.println("password correct");
+                sprintf(payload, "Password correct!");
+  
+                JSON.stringify(doorState).toCharArray(payload, 512);
+                
+                if (aws.publish(pTOPIC_NAME, payload) == 0) {
+                  Serial.print("Publish Message: ");
+                  Serial.println(payload);
+                }
+                else { 
+                  Serial.println("Oops, Publish Failed."); 
+                }
+              }
+              else{
+                playNote(18, 250);
+  
+                door = 0;
+                Serial.println("password error");
+                
+                JSON.stringify(doorState).toCharArray(payload, 512);
+                sprintf(payload, "Password Error!");
+  
+                if (aws.publish(pTOPIC_NAME, payload) == 0) {
+                  Serial.print("Publish Message: ");
+                  Serial.println(payload);
+                }
+                else { 
+                  Serial.println("Oops, Publish Failed."); 
+                }
+              }
+    
+              inputPassword="";
+              door = 2;
+              break;
+            }
+          } 
+        }
+      }
+
+            
+   } 
 }
+
   //lastButtonState = currentButtonState;
-
-
-void wifi_aws_Connect(){
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println(" CONNECTED");
-//  WiFi.softAP(ssid, password); 
-//  IPAddress IP = WiFi.softAPIP(); 
-//  Serial.print("AP IP address: "); 
-//  Serial.println(IP);
-  #if SWAP
-  WiFi.softAP(ssid, password); 
-  IPAddress IP = WiFi.softAPIP(); 
-  Serial.print("AP IP address: "); 
-  Serial.println(IP);
-  #else
-  // Connect to Wi-Fi network with SSID and password
-  Serial.print("Connecting to "); 
-  Serial.println(ssid); 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print("."); 
-  }
-  // Print local IP address and start web server Serial.println("");
-  Serial.println("WiFi connected."); 
-  Serial.println("IP address: "); 
-  Serial.println(WiFi.localIP());
-  #endif
-  server.begin();
-}
