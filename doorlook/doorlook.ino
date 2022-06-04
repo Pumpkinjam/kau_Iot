@@ -36,9 +36,7 @@ void MOTOR(int door){ // 1은 열림 0은 닫힘
     servo1.write(0);
     delay(1000);
     servo1.write(90);
-    while
   }
-  
 }
 
 void setup() {
@@ -90,39 +88,12 @@ void loop() {
     if (doormotor == "OPEN"){MOTOR(1);}
     else if (doormotor == "ClOSE"){MOTOR(0);}
   }
-  /*
-  if ((millis() - preMil) > intMil) 
-  {
-    preMil = millis();
-
-    // read Values from BME280
-    temp = bme.readTemperature();
-    humid = bme.readHumidity();
-    press = bme.readPressure() / 100.0F;
-
-    JSONVar bmeValues;
-    bmeValues["temp"] = temp;
-    bmeValues["humid"] = humid;
-    bmeValues["press"] = press;
-
-    JSON.stringify(bmeValues).toCharArray(payload, 512);
-    
-    if (testled.publish(pTOPIC_NAME, payload) == 0) {
-      Serial.print("Publish Message: ");
-      Serial.println(payload);
-    }
-    else { Serial.println("Oops, Publish Failed."); }
-  }*/
-  /*
-}
-  if(msgReceived == 1) {
-    msgReceived = 0;
-    Serial.print("Received Message:");
-    Serial.println(rcvdPayload);
-  }
   if((millis()-preMil) > intMil) {
   // read the state of the pushbutton value
-    if (digitalRead(Door_sensor)) {
+    if (digitalRead(Door_sensor)==1) {
+      JSONVar bmeValues;
+      bmeValues["doorsensor"] = digitalRead(Door_sensor);
+    }
       preMil = millis();
       if(testButton.publish(pTOPIC_NAME,payload) == 0) { 
       Serial.print("Publish Message:");
@@ -131,20 +102,16 @@ void loop() {
     else
     Serial.println("Publish failed");
   }
-  if(a = 1){
-    MOTOR(1);
+  if ((millis() - preMil) > intMil) {
+    preMil = millis();
+    JSONVar state;
+    bmeValues["doorsensor"] = digitalRead(Door_sensor);
+    JSON.stringify(state).toCharArray(payload, 512);
+    if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+      Serial.print("Publish Message: ");
+      Serial.println(payload);
+    }
+    else { Serial.println("Oops, Publish Failed."); }
   }
-  if(a = 2){
-    MOTOR(0);
-  }
-  Serial.print(digitalRead(Door_sensor));
-  if(Door_sensor == 1){
-    Serial.print("Door open");
-  }
-  if(Door_sensor == 0){
-    Serial.print("Door close");
-  }
-  a = 0;
-  delay(2000);
-  */
+
 }
