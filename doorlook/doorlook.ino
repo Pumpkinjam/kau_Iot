@@ -88,24 +88,14 @@ void loop() {
     if (doormotor == "OPEN"){MOTOR(1);}
     else if (doormotor == "ClOSE"){MOTOR(0);}
   }
-  if((millis()-preMil) > intMil) {
-  // read the state of the pushbutton value
-    if (digitalRead(Door_sensor)==1) {
-      JSONVar bmeValues;
-      bmeValues["doorsensor"] = digitalRead(Door_sensor);
-    }
-      preMil = millis();
-      if(testButton.publish(pTOPIC_NAME,payload) == 0) { 
-      Serial.print("Publish Message:");
-      Serial.println(payload);
-    }
-    else
-    Serial.println("Publish failed");
-  }
   if ((millis() - preMil) > intMil) {
     preMil = millis();
-    JSONVar state;
+    JSONVar bmeValues;
     bmeValues["doorsensor"] = digitalRead(Door_sensor);
+    JSONVar reported;
+    reported["reported"] = bmeValues;
+    JSONVar state;
+    state["state"] = reported;
     JSON.stringify(state).toCharArray(payload, 512);
     if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
       Serial.print("Publish Message: ");
@@ -113,5 +103,4 @@ void loop() {
     }
     else { Serial.println("Oops, Publish Failed."); }
   }
-
 }
