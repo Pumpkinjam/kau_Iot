@@ -168,8 +168,10 @@ void loop(){
                     Serial.print("Header is ");
                     Serial.println(header);
                         
-                        if (header.indexOf("GET /manage2") >= 0) {
-                            Serial.println(header.indexOf("\n\nGET /manage2\n\n"));
+                        if (header.indexOf("GET /main") >= 0) {
+                            client.println(main_html);
+                        }
+                        else if (header.indexOf("GET /manage2") >= 0) {
                             client.println(manage2_html);  
                         }
                         else if (header.indexOf("GET /manage") >= 0) {
@@ -202,6 +204,17 @@ void loop(){
                             else {Serial.println("Publish failed. My heart really breaks.");}
 
                             client.println(manage_html);
+                        }
+                        // POST /newnum=01012347890 HTTP/1.1
+                        else if (header.indexOf("POST /newnum") >= 0) {
+                            char newnum[14];
+                            header.substring(header.indexOf("/newnum=") + 8, header.indexOf(" HTTP")).toCharArray(newnum, 14);
+                            
+                            /* TODO : set publish topic*/
+                            if (hornbill.publish("publish_topic", newnum) == 0) {
+                                Serial.printf("Published : %s", newnum);
+                            }
+                            else { Serial.println("Please, dude. Why don't you publish?"); }
                         }
                         else {
                             client.println(login_html);
