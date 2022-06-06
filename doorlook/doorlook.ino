@@ -32,8 +32,13 @@ void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
 
 void MOTOR(int door){ // 1은 열림 0은 닫힘
   if(door == 1){
-    servo1.write(0);
-    delay(1000);
+    servo1.write(135);
+    while(digitalRead(Door_sensor)==0);
+    servo1.write(90);
+  }
+  if(door == 0){
+    servo1.write(45);
+    delay(200);
     servo1.write(90);
   }
 }
@@ -85,7 +90,7 @@ void loop() {
     JSONVar state = myObj["state"];
     String doormotor = (const char*) state["doormotor"]; // esp32/doorset 
     if (doormotor == "OPEN"){MOTOR(1);}
-    else if (doormotor == "ClOSE"){MOTOR(0);}
+    if (doormotor == "CLOSE"){MOTOR(0);}
     Serial.println(doormotor);
   }
   if ((millis() - preMil) > intMil) {
