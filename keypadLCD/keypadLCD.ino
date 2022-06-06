@@ -13,12 +13,15 @@
 AWS_IOT aws;
 
 char CLIENT_ID[] = "ysESP32";
-char sTOPIC_NAME[] = "esp32/lcd";
-char pTOPIC_NAME[] = "esp32/doorlock";
+char sTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/get/accepted";
+char SENT_GET[]= "$aws/things/ESP32_Doorlock/shadow/get";
+
+char pTOPIC_NAME[] = "esp32/doorsensor";
 
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
 char payload[512];
+char reportpayload[512];
 char rcvdPayload[512];
 
 //const char* ssid = "-";
@@ -68,12 +71,12 @@ String val;
 String p_val;
 
 //시간 관련 변수
-
 unsigned long timeVal;    //이전 시간
 unsigned long readTime;   //현재 타이머 시간
 char timeStringBuff[50]; //50 chars should be enough
 String tempTimeSet;      //임시 비밀번호 시간 저장
-bool isTemp = false;            //임시 비밀번호가 세팅되었을 때
+bool isTemp = false;     //임시 비밀번호가 세팅되었을 때
+int temp = 3;
 
 const char* ntpServer = "kr.pool.ntp.org";
 const long gmtOffset_sec = 3600*9;  //3600
@@ -91,11 +94,14 @@ int keyNum;
 //18 22
 unsigned long preMil = 0;
 const long intMil = 5000;
+String newpw0 = "";
+String lcdmsg0 = "";        
+String timeset0 = "";
+String temp0 = "";
 
 void playNote(int note, int dur) { 
   //duty = 0;
-  ledcSetup(ledChannel, nFrq[note], resolution); 
-  
+  ledcSetup(ledChannel, nFrq[note], resolution);
   ledcWrite(ledChannel, duty); 
   //Serial.println(note);
   delay(dur);
@@ -104,11 +110,14 @@ void playNote(int note, int dur) {
 }
 
 void load_password(){
+  doorPassword = "";
   int z = EEPROM.read(16);
     
     for (int i = 0; i < z; i++) {
-      doorPassword += EEPROM.read(i);
+      doorPassword += EEPROM.read(i) - '0';
     }
+    Serial.print("original password set :");
+    Serial.println(doorPassword);
 }
 
 void save_password(String p, int len){
@@ -132,13 +141,32 @@ bool pw_compare(String input) {
     }
     return input.charAt(z) == '\0';
 }
-
+// timeStringBuff => "June 06 2022 13:48"
+// time => "222211110000"
 bool check_time(String t){
-  if (timeStringBuff[16] == t[10] &&timeStringBuff[17] == t[11]){
-    return true;  
+  //날짜가 같은지
+  if (timeStringBuff[5] == t[6] &&timeStringBuff[6] == t[7]){
+    //시각이 같은지
+    if(timeStringBuff[13] == t[8] &&timeStringBuff[14] == t[9]){
+      //분이 같은지
+       if (timeStringBuff[16] == t[10] &&timeStringBuff[17] == t[11]){
+          return true;  
+       }
+       else{
+        return false;
+        Serial.println("time3"); 
+
+       } 
+    }
+    else{
+      return false;
+      Serial.println("time2"); 
+    }
   }
+  
   else{
     return false;
+    Serial.println("time1"); 
   }
 }
 
@@ -159,7 +187,6 @@ void printLocalTime()
   //timeinfo를 string값으로
   strftime(timeStringBuff, sizeof(timeStringBuff), "%B %d %Y %H:%M", &timeinfo);
   String asString(timeStringBuff);
-  
 }
 
 void wifi_aws_Connect(){
@@ -221,10 +248,10 @@ void setup() {
   currentButtonState = digitalRead(buttonPin);
 
   //초기값 지정
-  EEPROM.write(17, 0XAA);
-  EEPROM.write(18, 0X55);
-  EEPROM.commit();
-  save_password("12345678", 8);
+//  EEPROM.write(17, 0XAA);
+//  EEPROM.write(18, 0X55);
+//  EEPROM.commit();
+//  save_password("12345678", 8);
 
   wifi_aws_Connect();
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
@@ -240,15 +267,26 @@ void setup() {
   if (EEPROM.read(17) == 0XAA && EEPROM.read(18) == 0x55) {
         for (int i = 0, z = EEPROM.read(16); i < z; i++) {
             doorPassword += EEPROM.read(i) - '0';
-            Serial.print("door Password : ");
-            Serial.println(doorPassword);
+            
+            
         }
+        Serial.print("door Password : ");
+        Serial.println(doorPassword);
     }
    else {
         Serial.println("Doorlock password is not initialized.");
         //임의
         //doorPassword = "12345678";
    }
+   // get shadow state
+    if(aws.publish(SENT_GET,"{}") == 0)
+      {       
+        Serial.print("Empty String Published\n");
+      }
+    else
+      {
+        Serial.println("Empty String Publish failed\n");
+      }  /*Sent Empty string to fetch Shadow desired state*/   
   
 }
 
@@ -269,25 +307,29 @@ void loop() {
   if ( (millis()-preMil) > intMil){
     JSONVar doorState;
     doorState["door"] = door;
-    
+         
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
         Serial.print("Received Message: ");
         Serial.println(rcvdPayload);
 
         // Parse JSON
-        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "newpw" : "1234", "lcd" : "a", "time" : "202206062349" }
-        const char* newpw = (const char*)myObj["newpw"];
-        const char* lcdmsg = (const char*)myObj["lcd"];
-        const char* timeset = (const char*)myObj["time"];
+        JSONVar myObj = JSON.parse(rcvdPayload);    
+        JSONVar state = myObj["state"];
+        JSONVar reported = state["reported"];    // reported has { "newpw" : "1234", "lcd" : "a", "time" : "202206062349" , "temp" : 0 }
         
-        
+        String newpw = (const char*)reported["newpw"];
+        String lcdmsg = (const char*)reported["lcd"];        
+        String timeset = (const char*)reported["time"];
+        String temp = (const char*)reported["temp"];
 
         bool isGoodPw = true;
         int len = 0;
         // check whether newpw characters are between 0 to 9 or not
         for (int i = 0; newpw[i] != 0; i++) {
             char tmp = newpw[i];
+            Serial.print("tmp: ");
+            Serial.println(tmp);
             if (tmp < '0' || tmp > '9') {
                 Serial.println("Password reset failed : unavailable character");
                 isGoodPw = false; break;
@@ -297,61 +339,89 @@ void loop() {
                 Serial.println("Password reset failed : length over 16");
                 isGoodPw = false; break;
             }
-        }        
-        // password length is saved at EEPROM[16]
-        // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55       
+        }
 
-        // lcd 메시지 출력
-        if (lcdmsg == "a"){
-          My_LCD.clear();
-          Serial.println("start");
-          My_LCD.begin(16, 2);
-          My_LCD.print("1");
-        }
-        else if (lcdmsg == "b"){
-          My_LCD.clear();
-          Serial.println("start");
-          My_LCD.begin(16, 2);
-          My_LCD.print("2");          
-        }
-        else if (lcdmsg == "c"){
-          My_LCD.clear();
-          Serial.println("start");
-          My_LCD.begin(16, 2);
-          My_LCD.print("3");          
-        }
-        else{
-          My_LCD.clear();
-          Serial.println("start");
-          My_LCD.begin(16, 2);
-          My_LCD.print("4");          
-        }
-        //비밀번호 영구 변경 - timeset이 0이면
-        if (isGoodPw && timeset == "0") {
-            EEPROM.write(16, len);
-            for (int i = 0; i < len; i++) {
-                EEPROM.write(i, newpw[i]);
+        // reported{} 값이 변경됐을 때
+        if (newpw0 != newpw || lcdmsg0 != lcdmsg || timeset0 != timeset || temp0 != temp){
+          newpw0 = newpw;
+          lcdmsg0 = lcdmsg;
+          timeset0 = timeset;
+          temp0 = temp;
+          Serial.println("-----shadow value changed-----");
+          Serial.println(isGoodPw);
+          Serial.println(newpw);
+          Serial.println(lcdmsg);
+          Serial.println(timeset);
+          Serial.println(temp);
+          Serial.println("---------------------------");
+          // password length is saved at EEPROM[16]
+          // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55       
+  
+          // lcd 메시지 출력 => temp = 0 일때
+          // temp = 1 => 비밀번호 영구 변경
+          // temp = 2 임시 비밀번호 변경
+          if (temp == "0")
+          {                  
+            if (lcdmsg == "a"){
+              My_LCD.clear();
+              Serial.println("start 1");
+              My_LCD.begin(16, 2);
+              My_LCD.print("Hello 1");
             }
-            Serial.println("Password reset succeed.");
+            else if (lcdmsg == "b"){
+              My_LCD.clear();
+              Serial.println("start 2");
+              My_LCD.begin(16, 2);
+              My_LCD.print("Hello 2");          
+            }
+            else if (lcdmsg == "c"){
+              My_LCD.clear();
+              Serial.println("start 3");
+              My_LCD.begin(16, 2);
+              My_LCD.print("Hello 3");          
+            }
+            else{
+              My_LCD.clear();
+              Serial.println("start 4");
+              My_LCD.begin(16, 2);
+              My_LCD.print("Hello 4");          
+            }
+          }
+          //비밀번호 영구 변경                
+          else if (isGoodPw && temp == "1") {
+              EEPROM.write(16, len);
+              for (int i = 0; i < len; i++) {
+                  EEPROM.write(i, newpw[i]);
+              }
+              load_password();
+              Serial.println("Password reset succeed.");
+          }
+         // 임시 비밀번호 시간 설정
+          else if (temp == "2" && isGoodPw){
+            //변수에 저장
+            tempTimeSet = timeset;
+            Serial.print("tempTimeSet : ");
+            Serial.println(tempTimeSet);
+            isTemp = true;
+            Serial.print("tempPasswordSet : ");
+            doorPassword = newpw;
+            Serial.println(doorPassword);
+                      
+           }
+           
         }
-       // 임시 비밀번호 시간 설정
-        if (timeset != "0" && isGoodPw && !isTemp){
-          //변수에 저장
-          tempTimeSet = timeset;
-          isTemp = true;
-          Serial.println("tempPasswordSet");
-          doorPassword = newpw;
-          Serial.println(timeStringBuff);
-                    
-         }
+        
+   
+      
+        
+      }
       // 임시 비밀번호 시간이 다 되면
-        if (isTemp && check_time(tempTimeSet) ){
-          Serial.println("temp time over. original password set");
+      if (isTemp && check_time(tempTimeSet)==true ){
+          Serial.println("------temp time over ------");
           isTemp = false;
           load_password();
         }
-      }
-
+        
       if (keyPressed != NO_KEY) {
         
         if(keyPressed == '*'){
@@ -368,7 +438,7 @@ void loop() {
               delay(100);
             }
             if (keyPressed == '#'){
-              inputPassword += '\0';
+              //inputPassword += '\0';
               
               Serial.print('\n');
               Serial.println(inputPassword);
@@ -423,7 +493,7 @@ void loop() {
       }
 
             
-   } 
+  } 
 }
 
   //lastButtonState = currentButtonState;
