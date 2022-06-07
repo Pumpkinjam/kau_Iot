@@ -1,4 +1,3 @@
-#include "OV7670.h"
 extern "C" {
 #include "crypto/base64.h"
 }
@@ -7,7 +6,6 @@ extern "C" {
 #include "WiFiData.h"
 #include <AWS_IOT.h>
 #include <Arduino_JSON.h>
-#include <Wire.h>
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
@@ -18,7 +16,7 @@ String header;
 char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update";
 char sTOPIC_IMAGE[] = "web/image";
 /* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
- * 
+ *
  * const char* ssid = WIFI_SSID;
  * const char* password = WIFI_PW;
  * char HOST_ADDRESS[] = AWS_DEVICE_DATA_ENDPOINT;
@@ -32,8 +30,7 @@ AWS_IOT hornbill;
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
 char payload[100];
-char rcvdPayload[600];
-char cmd[20];
+char rcvdPayload[53000];
 
 // saved latest image
 unsigned char* image_data;
@@ -67,7 +64,8 @@ String parseDate(String str) {
         return String("");
     }
     int idx_start = str.indexOf("date=") + 5;
-    int idx_end = idx_start + 10;
+    int idx_end = str.indexOf("&time");
+    if (idx_start == idx_end) { return String();}
 
     return str.substring(idx_start, idx_start+4) + str.substring(idx_start+5, idx_start+7) + str.substring(idx_start+8, idx_end);
 }
@@ -78,7 +76,9 @@ String parseTime(String str) {
         return String("");
     }
     int idx_start = str.indexOf("time=") + 5;
-    int idx_end = idx_start + 5;
+    int idx_end = str.indexOf("&lcd");
+    if(idx_start == idx_end) { return String(); }
+
     return str.substring(idx_start, idx_start+2) + str.substring(idx_start+3, idx_end);
 }
 
@@ -138,18 +138,22 @@ void setup() {
 }
 
 
-void loop(){
+void loop() {
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
-        Serial.print("Received Message: ");
-        Serial.println(rcvdPayload);
+        Serial.print("Image Received.");
+        
+        // rcvdPayload has {"base64image":"~~~"}
+        // index 16 ~ indexOf('\"')
 
-        // Parse JSON
-        JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "base64image" : "~~~" }
-        unsigned char toDecode[53000];
-        JSON.stringify(myObj["base64image"]).toCharArray(toDecode, 53000);
-        image_data = base64_decode(
-            (const unsigned char*)toDecode, strlen(toDecode), &outputLength);
+        int image_size = 0;
+        
+        // copy that.
+        for (int j = 16, z = -1; (z = rcvdPayload[j++]) != 34;/*"*/) {
+          rcvdPayload[image_size++] = z;
+        }
+        
+        image_data = base64_decode( (const unsigned char*)rcvdPayload, image_size, &outputLength);
     }
 
     WiFiClient client = server.available(); // Listen for incoming clients
@@ -180,21 +184,43 @@ void loop(){
                     Serial.print("Header is ");
                     Serial.println(header);
                         
-                        if (header.indexOf("GET /main") >= 0) {
+                        if (header.indexOf("GET /main") != -1) {
                             client.println(main_html);
                         }
-                        else if (header.indexOf("GET /manage2") >= 0) {
+                        else if (header.indexOf("GET /manage2") != -1) {
                             client.println(manage2_html);  
                         }
-                        else if (header.indexOf("GET /manage") >= 0) {
+                        else if (header.indexOf("GET /manage") != -1) {
                             client.println(manage_html);
                         }
-                        else if (header.indexOf("GET /lcd") >= 0) {
+                        else if (header.indexOf("GET /lcd") != -1) {
                             client.println(lcd_html);  
+                        }
+                        else if (header.indexOf("GET /open") != -1) {
+                            JSONVar doormotor;
+                            doormotor["doormotor"] = String("OPEN");
+                            JSONVar state;
+                            state["state"] = doormotor;
+
+                            JSON.stringify(state).toCharArray(payload, 512);
+
+                            Serial.println(payload);
+                            
+                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                                Serial.print("Published : ");
+                                Serial.println(payload);
+                            }
+                            else {Serial.println("Publish failed. My heart really breaks.");}
+
+                            client.println(manage_html);
+                        }
+                        else if (header.indexOf("GET /view_image") != -1) {
+                            client.write(image_data, outputLength);
                         }
                         // until=* for changing password permanently
                         // POST /newpw=********&date=yyyy-mm-dd&time=hh:mm&lcd=n&tmp=k HTTP/1.1
-                        else if (header.indexOf("POST /newpw") >= 0) {
+                        // time becomes "" if the user changes pw permanently
+                        else if (header.indexOf("POST /newpw") != -1) {
                             JSONVar pwSettingValues;
                             pwSettingValues["newpw"] = parsePw(header);
                             pwSettingValues["time"] = parseDate(header) + parseTime(header);
@@ -218,7 +244,7 @@ void loop(){
                             client.println(manage_html);
                         }
                         // POST /newnum=01012347890 HTTP/1.1
-                        else if (header.indexOf("POST /newnum") >= 0) {
+                        else if (header.indexOf("POST /newnum") != -1) {
                             char newnum[14];
                             header.substring(header.indexOf("/newnum=") + 8, header.indexOf(" HTTP")).toCharArray(newnum, 14);
                             
