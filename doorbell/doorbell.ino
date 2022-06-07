@@ -42,7 +42,10 @@ const int D7 = 4;
 
 OV7670 *camera;
 
+String httpreturn;
+
 String encodedImage;
+int count = 0;
 
 
 void wifiConnect(){
@@ -61,7 +64,7 @@ void wifiConnect(){
   }
   Serial.println("Connected to wifi");
 }
-
+/*
 void print_wakeup_reason(){
   esp_sleep_wakeup_cause_t wakeup_reason;
   wakeup_reason = esp_sleep_get_wakeup_cause();
@@ -75,7 +78,7 @@ void print_wakeup_reason(){
     default : Serial.println("Wakeup was not caused by deep sleep"); break;
   }
 }
-
+*/
 void ringBell(int dur){
   Serial.println("ring");
   ledcSetup(ledChannel,932,resolution);
@@ -117,7 +120,7 @@ void postHTTP2(){
 void buttonPush(){
   Serial.println("Button pushed");
   camera->oneFrame();
-  //ringBell(700);
+  ringBell(700);
   
   postHTTP2();
   //Serial.println(base64::encode(camera->frame, camera->xres * camera->yres * 2));
@@ -146,10 +149,17 @@ esp_err_t _http_event_handler(esp_http_client_event_t *evt)
       Serial.printf("HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
       if (!esp_http_client_is_chunked_response(evt->client)) {
         // Write out data
-        // printf("%.*s", evt->data_len, (char*)evt->data);
+        count = evt->data_len;
+        for(int i = 0; i<count;i++){
+          httpreturn += ((char*)evt->data)[i];
+        }
+        //Serial.printf("%.*s\n", evt->data_len, (char*)evt->data);
       }
       break;
     case HTTP_EVENT_ON_FINISH:
+      Serial.println(httpreturn);
+      Serial.println(httpreturn.length());
+      httpreturn="";
       Serial.println("");
       Serial.println("HTTP_EVENT_ON_FINISH");
       break;
@@ -166,12 +176,11 @@ void setup() {
   // put your setup code here, to run once:
    Serial.begin(115200);
    camera = new OV7670(OV7670::Mode::QQVGA_RGB565, SIOD, SIOC, VSYNC, HREF, XCLK, PCLK, D0, D1, D2, D3, D4, D5, D6, D7);
-   print_wakeup_reason();
+   //print_wakeup_reason();
    wifiConnect();
-   //iotSetting();
    ledcAttachPin(buzPin, ledChannel);
    pinMode(buttonPin,INPUT);
-   esp_sleep_enable_ext0_wakeup(GPIO_NUM_36,1);
+   //esp_sleep_enable_ext0_wakeup(GPIO_NUM_36,1);
    preMil = millis();
 }
 
@@ -192,7 +201,7 @@ void loop() {
     
   }*/
 }
-
+/*
 static esp_err_t event_handler(esp_http_client_event_t *evt){
   switch(evt->event_id){
     case SYSTEM_EVENT_STA_DISCONNECTED :
@@ -201,8 +210,4 @@ static esp_err_t event_handler(esp_http_client_event_t *evt){
       break;
   }
 }
-
-
-void wakeStub(){
-  
-}
+*/
