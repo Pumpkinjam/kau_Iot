@@ -1,3 +1,7 @@
+#include "OV7670.h"
+extern "C" {
+#include "crypto/base64.h"
+}
 #include "secret.h"
 #include "connection_data.h"
 #include "WiFiData.h"
@@ -30,6 +34,10 @@ int msgCount = 0, msgReceived = 0;
 char payload[100];
 char rcvdPayload[600];
 char cmd[20];
+
+// saved latest image
+unsigned char* image_data;
+size_t outputLength;
 
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   // set rcvdPayload(recieved payload) to payload
@@ -138,6 +146,10 @@ void loop(){
 
         // Parse JSON
         JSONVar myObj = JSON.parse(rcvdPayload);    // myObj has { "base64image" : "~~~" }
+        unsigned char toDecode[53000];
+        JSON.stringify(myObj["base64image"]).toCharArray(toDecode, 53000);
+        image_data = base64_decode(
+            (const unsigned char*)toDecode, strlen(toDecode), &outputLength);
     }
 
     WiFiClient client = server.available(); // Listen for incoming clients
