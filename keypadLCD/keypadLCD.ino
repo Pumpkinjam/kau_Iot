@@ -14,10 +14,9 @@ AWS_IOT aws;
 
 char CLIENT_ID[] = "ysESP32";
 char sTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/get/accepted";
-//char sTOPIC_NAME[] = "lcd/keypad";
 char SENT_GET[]= "$aws/things/ESP32_Doorlock/shadow/get";
 
-char pTOPIC_NAME[] = "esp32/doorset";
+char pTOPIC_NAME[] = "esp32/doorsensor";
 
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
@@ -25,13 +24,13 @@ char payload[512];
 char reportpayload[512];
 char rcvdPayload[512];
 
-const char* ssid = "-";
-const char* password = "-!";
-char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
-
 //const char* ssid = "-";
-//const char* password = "-";
+//const char* password = "-!";
 //char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
+
+const char* ssid = "-";
+const char* password = "-";
+char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 WiFiServer server(80);
 
 // Create An LCD Object. Signals: [ RS, EN, D4, D5, D6, D7 ]
@@ -50,7 +49,6 @@ int currentButtonState;
 int lastButtonState;
 
 bool isGoodPw = true;
-int count = 0;
 
 char hexaKeys[ROWS][COLS] = {
   {'1','2','3','A'},
@@ -74,7 +72,6 @@ String p_val;
 
 //시간 관련 변수
 unsigned long timeVal;    //이전 시간
-unsigned long timeVal2;    //이전 시간
 unsigned long readTime;   //현재 타이머 시간
 char timeStringBuff[50]; //50 chars should be enough
 String tempTimeSet;      //임시 비밀번호 시간 저장
@@ -192,18 +189,6 @@ void printLocalTime()
   String asString(timeStringBuff);
 }
 
-void shadow_publish(){
-     // get shadow state
-    if(aws.publish(SENT_GET,"{}") == 0)
-      {       
-        Serial.print("Empty String Published\n");
-      }
-    else
-      {
-        Serial.println("Empty String Publish failed\n");
-      }  /*Sent Empty string to fetch Shadow desired state*/   
-}
-
 void wifi_aws_Connect(){
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
@@ -292,8 +277,17 @@ void setup() {
         Serial.println("Doorlock password is not initialized.");
         //임의
         //doorPassword = "12345678";
-   }  
-  shadow_publish();
+   }
+   // get shadow state
+    if(aws.publish(SENT_GET,"{}") == 0)
+      {       
+        Serial.print("Empty String Published\n");
+      }
+    else
+      {
+        Serial.println("Empty String Publish failed\n");
+      }  /*Sent Empty string to fetch Shadow desired state*/   
+  
 }
 
 
@@ -303,11 +297,7 @@ void loop() {
   currentButtonState = digitalRead(buttonPin);
   keyPressed = customKeypad.getKey();
   printLocalTime();
-//  if(millis()-timeVal2 >= 1000){
-//    shadow_publish();
-//    timeVal2 = millis();
-//
-//  }
+
   if(millis()-timeVal >= 60000){
     readTime = millis()/60000;
     Serial.println("1분 경과, 현재 시간: ");
@@ -352,7 +342,7 @@ void loop() {
         }
 
         // reported{} 값이 변경됐을 때
-        //if (newpw0 != newpw || timeset0 != timeset || temp0 != temp){
+        if (newpw0 != newpw || lcdmsg0 != lcdmsg || timeset0 != timeset || temp0 != temp){
           newpw0 = newpw;
           lcdmsg0 = lcdmsg;
           timeset0 = timeset;
@@ -397,9 +387,6 @@ void loop() {
               My_LCD.print("Hello 4");          
             }
           }
-          else if (temp != "0"){
-            My_LCD.clear(); 
-          }
           //비밀번호 영구 변경                
           else if (isGoodPw && temp == "1") {
               EEPROM.write(16, len);
@@ -422,7 +409,7 @@ void loop() {
                       
            }
            
-        //}
+        }
         
    
       
@@ -462,11 +449,10 @@ void loop() {
                 playNote(13, 125);
                 playNote(13, 250);
                 playNote(18, 400);
-                //doorsensor -   door = 0 => 문열림, door = 1 => 문 닫힘
-                door = 0;
-                doorState["door"] = door;
+  
+                door = 1;
                 Serial.println("password correct : ");
-                count = 0;
+                sprintf(payload, "Password correct!");
   
                 JSON.stringify(doorState).toCharArray(payload, 512);
                 
@@ -480,18 +466,14 @@ void loop() {
               }
               else{
                 playNote(18, 250);
-                count++;
-                door = 1;
+  
+                door = 0;
                 Serial.println("password error : ");
                 Serial.println(doorPassword);
                 Serial.println(inputPassword);
-
-                if (count >= 3){
-                  doorState["door"] = door;
-                  JSON.stringify(doorState).toCharArray(payload, 512);
-                  //sprintf(payload, "{ door = 1 }");  
-                }
                 
+                JSON.stringify(doorState).toCharArray(payload, 512);
+                sprintf(payload, "Password Error!");
   
                 if (aws.publish(pTOPIC_NAME, payload) == 0) {
                   Serial.print("Publish Message: ");
