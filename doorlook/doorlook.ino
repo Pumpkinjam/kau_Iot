@@ -5,11 +5,11 @@
 
 Servo servo1;
 AWS_IOT MOTORIOT;
-const char* ssid = "SK_WiFi67AD";
-const char* password = "1102000710";
+const char* ssid = "iiiii";
+const char* password = "1876075554";
 char HOST_ADDRESS[]= "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 char CLIENT_ID[]= "KAU_MOTOR";
-char sTOPIC_NAME[]= "ESP32/Doorlock"; // subscribe topic name
+char sTOPIC_NAME[]= "ESP32/Doorlock"; // subscribe topic name // 틀리면 
 char pTOPIC_NAME[]= "esp32/doorsensor"; // publish topic name
 int status = WL_IDLE_STATUS;
 int msgCount=0,msgReceived = 0;
@@ -18,8 +18,9 @@ char rcvdPayload[512];
 unsigned long preMil = 0; 
 const long intMil = 5000;
 static const int servoPin = 33; 
+int open_count = 0 ;
 
-#define sensor 33
+#define motor_sensor 32
 #define Door_sensor 25
 
 
@@ -30,16 +31,43 @@ void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
   msgReceived = 1;
 }
 
-void MOTOR(int door){ // 1은 열림 0은 닫힘
-  if(door == 1){
-    servo1.write(135);
-    while(digitalRead(Door_sensor)==0);
-    servo1.write(90);
+void MOTOR(void){ // 문을 모터로 열어줬다가 문이 닫히면 문을 잠구어 줌
+  servo1.write(100);
+  while(open_count < 100){ // 모터를 센서에 감지될 때 까지 열어줌
+    if(digitalRead(motor_sensor)==1)open_count ++;
+    if(digitalRead(motor_sensor)==0)open_count = 0;
   }
-  if(door == 0){
-    servo1.write(45);
-    delay(200);
-    servo1.write(90);
+  open_count = 0;
+  servo1.write(90);
+  while(open_count < 1000){  // 문 열었을때
+    sensor();
+    if(digitalRead(Door_sensor)==0)open_count ++;
+    if(digitalRead(Door_sensor)==1)open_count = 0;
+  }
+  open_count = 0;
+  while(open_count < 10000){ //문 닫았을때
+    sensor();
+    if(digitalRead(Door_sensor)==1)open_count ++;
+    if(digitalRead(Door_sensor)==0)open_count = 0;
+  }
+  open_count = 0;
+  servo1.write(45);
+  delay(200);
+  servo1.write(90);
+}
+
+void sensor(void){
+  if ((millis() - preMil) > intMil) {
+    preMil = millis();
+    JSONVar state;
+    state["door_sensor"] = digitalRead(Door_sensor); //esp32/doorsensor
+    JSON.stringify(state).toCharArray(payload, 512);
+    
+    if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
+      Serial.print("Publish Message: ");
+      Serial.println(payload);
+    }
+    else { Serial.println("Oops, Publish Failed."); }
   }
 }
 
@@ -77,11 +105,12 @@ else {
   }
 // initialize the pushbutton pin as an input
   delay(2000);
-  pinMode(sensor, INPUT);
+  pinMode(motor_sensor, INPUT);
   pinMode(Door_sensor, INPUT);
 }
 
 void loop() {
+  
   if(msgReceived == 1)
   {
     msgReceived = 0;
@@ -89,20 +118,9 @@ void loop() {
     JSONVar myObj = JSON.parse(rcvdPayload);
     JSONVar state = myObj["state"];
     String doormotor = (const char*) state["doormotor"]; // esp32/doorset 
-    if (doormotor == "OPEN"){MOTOR(1);}
-    if (doormotor == "CLOSE"){MOTOR(0);}
-    Serial.println(doormotor);
-  }
-  if ((millis() - preMil) > intMil) {
-    preMil = millis();
-    JSONVar state;
-    state["door_sensor"] = digitalRead(Door_sensor); //esp32/doorsensor
-    JSON.stringify(state).toCharArray(payload, 512);
-    
-    if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
-      Serial.print("Publish Message: ");
-      Serial.println(payload);
+    if (doormotor == "OPEN"){
+      MOTOR();
     }
-    else { Serial.println("Oops, Publish Failed."); }
   }
+  sensor();
 }
