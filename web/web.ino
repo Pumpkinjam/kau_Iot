@@ -45,7 +45,7 @@ void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   rcvdPayload = payLoad;
   Serial.println("Receiving...");
   playNote(22,3);
-  playNote(18,3);
+  playNote(18,2);
   playNote(0,-1);
   msgReceived = 1;
 }
@@ -101,6 +101,7 @@ String parseLcd(String str) {
 void setup() {
     Serial.begin(115200);
     BMP::construct16BitHeader(bmpHeader, 160, 120);
+    ledcAttachPin(buzPin, ledChannel);
 
     // Initialize WIFI
     Serial.print("WIFI status = ");

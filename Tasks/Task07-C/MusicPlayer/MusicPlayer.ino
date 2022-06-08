@@ -63,7 +63,7 @@ void playNote(int note, int dur) {
     int duty = 128;
     // means ','
     if (note == -1) {
-      duty = 0
+      duty = 0;
     }
     
     ledcSetup(ledChannel, nFrq[note], resolution);
