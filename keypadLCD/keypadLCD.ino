@@ -51,6 +51,7 @@ int lastButtonState;
 
 bool isGoodPw = true;
 int count = 0;
+bool lcdSignal = false;
 
 char hexaKeys[ROWS][COLS] = {
   {'1','2','3','A'},
@@ -85,6 +86,8 @@ const char* ntpServer = "kr.pool.ntp.org";
 const long gmtOffset_sec = 3600*9;  //3600
 const int daylightOffset_sec = 0; // 3600
 
+String sResult = "";
+  
 int door = 2;
 int sVal;
 int nFrq[] = {131, 139, 147, 156, 165, 
@@ -203,6 +206,31 @@ void shadow_publish(){
         Serial.println("Empty String Publish failed\n");
       }  /*Sent Empty string to fetch Shadow desired state*/   
 }
+void split(String s){
+  String sTemp = "";
+  String sCopy = s;
+  sResult = "";
+  int cnt = 0; 
+  while(cnt <= 10){
+    int pos = sCopy.indexOf("%");  
+    if(-1 != pos)
+    {
+      sTemp = sCopy.substring(0, pos);
+      Serial.println(sTemp);
+      sCopy = sCopy.substring(pos + 3);    
+      sResult += " ";
+      sResult += sTemp;
+    }
+    else
+    {
+      Serial.println(sCopy);
+      sResult += " ";
+      sResult += sCopy;
+      break;        
+    }
+    cnt++;
+  }
+}
 
 void wifi_aws_Connect(){
   WiFi.begin(ssid, password);
@@ -293,10 +321,8 @@ void setup() {
         //임의
         //doorPassword = "12345678";
    }  
-  shadow_publish();
+  //shadow_publish();
 }
-
-
 void loop() {
 
   lastButtonState = currentButtonState;
@@ -305,7 +331,7 @@ void loop() {
   printLocalTime();
 //  if(millis()-timeVal2 >= 1000){
 //    shadow_publish();
-//    timeVal2 = millis();
+//    timeVal2 = millis();짐
 //
 //  }
   if(millis()-timeVal >= 60000){
@@ -314,10 +340,19 @@ void loop() {
     Serial.println(timeStringBuff);
     timeVal = millis();
   }
+  if(millis()-timeVal2 >= 60000 && lcdSignal == true){
+     readTime = millis()/60000;
+     Serial.println("1분 경과, 현재 시간: ");
+     Serial.println(timeStringBuff);
+     timeVal2 = millis();
+     My_LCD.clear();
+     Serial.println("a minute passed!");
+     lcdSignal = false;
+  }
   if ( (millis()-preMil) > intMil){
     JSONVar doorState;
     doorState["door"] = door;
-         
+    
     if (msgReceived == 1) {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
         Serial.print("Received Message: ");
@@ -358,7 +393,7 @@ void loop() {
           timeset0 = timeset;
           temp0 = temp;
           Serial.println("-----shadow value changed-----");
-          Serial.println(isGoodPw);
+          //Serial.println(isGoodPw);
           Serial.println(newpw);
           Serial.println(lcdmsg);
           Serial.println(timeset);
@@ -372,36 +407,60 @@ void loop() {
           // temp = 2 임시 비밀번호 변경
           if (temp == "0")
           {                  
-            if (lcdmsg == "a"){
+            if (lcdmsg == "1"){
               My_LCD.clear();
               Serial.println("start 1");
               My_LCD.begin(16, 2);
-              My_LCD.print("Hello 1");
+              
+              My_LCD.setCursor(0,0);
+              My_LCD.print("I'm out of home");
+              My_LCD.setCursor(0,1);
+              My_LCD.print("sorry");
             }
-            else if (lcdmsg == "b"){
+            else if (lcdmsg == "2"){
               My_LCD.clear();
               Serial.println("start 2");
               My_LCD.begin(16, 2);
-              My_LCD.print("Hello 2");          
+              
+              My_LCD.setCursor(4,0);
+              My_LCD.print("Please");
+              My_LCD.setCursor(0,1);
+              My_LCD.print("put it on the door");          
             }
-            else if (lcdmsg == "c"){
+            else if (lcdmsg == "3"){
               My_LCD.clear();
               Serial.println("start 3");
               My_LCD.begin(16, 2);
-              My_LCD.print("Hello 3");          
+              
+              My_LCD.setCursor(4,0);
+              My_LCD.print("Contact");
+              My_LCD.setCursor(1,1);
+              My_LCD.print("010-8619-7647");
             }
             else{
+              split(lcdmsg);
+              lcdmsg = sResult;
               My_LCD.clear();
-              Serial.println("start 4");
-              My_LCD.begin(16, 2);
-              My_LCD.print("Hello 4");          
+              Serial.print(" lcdmsg :");
+              Serial.println(lcdmsg);
+
+              My_LCD.setCursor(0,0);
+              My_LCD.print(lcdmsg.substring(0,16) );
+              My_LCD.setCursor(0,1);
+              My_LCD.print(lcdmsg.substring(16,32) );
+         
             }
+            lcdSignal = true;
+            //lcd 메시지는 1분 지나면 꺼짐
+            
           }
-          else if (temp != "0"){
+          if (temp != "0"){
+            Serial.println("asd");
             My_LCD.clear(); 
           }
           //비밀번호 영구 변경                
-          else if (isGoodPw && temp == "1") {
+          if (isGoodPw && temp == "1") {
+              Serial.println("__________1_________");
               EEPROM.write(16, len);
               for (int i = 0; i < len; i++) {
                   EEPROM.write(i, newpw[i]);
@@ -411,6 +470,7 @@ void loop() {
           }
          // 임시 비밀번호 시간 설정
           else if (temp == "2" && isGoodPw){
+            Serial.println("__________2_________");
             //변수에 저장
             tempTimeSet = timeset;
             Serial.print("tempTimeSet : ");
@@ -485,6 +545,7 @@ void loop() {
                 Serial.println("password error : ");
                 Serial.println(doorPassword);
                 Serial.println(inputPassword);
+                
 
                 if (count >= 3){
                   doorState["door"] = door;
@@ -501,7 +562,8 @@ void loop() {
                   Serial.println("Oops, Publish Failed."); 
                 }
               }
-    
+              My_LCD.clear();
+
               inputPassword="";
               door = 2;
               break;
