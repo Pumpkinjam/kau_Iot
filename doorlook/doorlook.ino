@@ -35,7 +35,7 @@ void mySubCallBackHandler (char *topicName, int payloadLen, char *payLoad)
 }
 
 void MOTOR(void){ // 문을 모터로 열어줬다가 문이 닫히면 문을 잠구어 줌
-  servo1.write(100);
+  servo1.write(80);
   delay(1000);
   servo1.write(90);
   while(open_count < 200 && digitalRead(door_butten) == 1){  // 문 열었을때
@@ -50,13 +50,13 @@ void MOTOR(void){ // 문을 모터로 열어줬다가 문이 닫히면 문을 �
     if(digitalRead(Door_sensor)==0)open_count = 0;
   }Serial.println("문이 닫혔습니다.");
   open_count = 0;
-  servo1.write(80);
+  servo1.write(100);
   while(open_count < 500){ // 모터를 센서에 감지될 때 까지 닫아줌
     if(digitalRead(motor_sensor)==1)open_count ++;
     if(digitalRead(motor_sensor)==0)open_count = 0;
   }Serial.println("센서에 감지되었습니다.");
   open_count = 0;
-   delay(50);
+   delay(500);
   servo1.write(90);
 }
 
@@ -123,7 +123,7 @@ void loop() {
       state["door"] = 1; //esp32/doorsensor
       JSON.stringify(state).toCharArray(payload, 512);
       if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
-        Serial.println("문이강제로 열렸습니다");
+        Serial.println("문이 강제로 열렸습니다");
         door_error = 1;
       }
       else { Serial.println("Oops, Publish Failed."); }
