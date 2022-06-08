@@ -5,7 +5,10 @@ extern "C" {
 #include "connection_data.h"
 #include "WiFiData.h"
 #include <AWS_IOT.h>
-#include <Arduino_JSON.h>
+
+#define RCVD_SIZE 27000
+bool receivingImage = false;
+int receive_lastIndex = 0;
 
 const char* ntpServer = "pool.ntp.org";
 const long gmtOffset_sec = 3600*9; // 3600
@@ -25,14 +28,15 @@ char sTOPIC_IMAGE[] = "web/image";
  * these are not supposed to be uploaded to github
 */
 
-AWS_IOT hornbill;
+AWS_IOT* hornbill = new AWS_IOT();
 
 int status = WL_IDLE_STATUS;
 int msgCount = 0, msgReceived = 0;
 char payload[100];
-char rcvdPayload[53000];
+char rcvdPayload[RCVD_SIZE];
 
 // saved latest image
+char* encoded_image;
 unsigned char* image_data;
 size_t outputLength;
 
@@ -95,6 +99,8 @@ String parseLcd(String str) {
 void setup() {
     Serial.begin(115200);
 
+    Serial.println(sizeof(server));
+
     // Initialize WIFI
     Serial.print("WIFI status = ");
     Serial.println(WiFi.getMode());
@@ -117,13 +123,13 @@ void setup() {
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
 
-    if (hornbill.connect(HOST_ADDRESS, CLIENT_ID) == 0) {
+    if (hornbill->connect(HOST_ADDRESS, CLIENT_ID) == 0) {
         Serial.println("Connected to AWS");
         delay(1000);
 
-        if (0 == hornbill.subscribe(sTOPIC_IMAGE, mySubCallBackHandler)) {
+        if (0 == hornbill->subscribe(sTOPIC_IMAGE, mySubCallBackHandler)) {
         Serial.println("Subscribe Succeed");
-        }
+        }   
         else {
         Serial.println("Subscribe Failed, Check the Thing Name and Certificates");
         while(1);
@@ -140,20 +146,24 @@ void setup() {
 
 void loop() {
     if (msgReceived == 1) {
+        receivingImage = !receivingImage;
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
+
         Serial.print("Image Received.");
+        Serial.println(receivingImage ? "(second)" : "(first)");
         
         // rcvdPayload has {"base64image":"~~~"}
         // index 16 ~ indexOf('\"')
-
-        int image_size = 0;
         
         // copy that.
-        for (int j = 16, z = -1; (z = rcvdPayload[j++]) != 34;/*"*/) {
-          rcvdPayload[image_size++] = z;
+        int i; unsigned char z;
+        for (i = 0, z = 255; (z = rcvdPayload[i]) != 0; i++) {
+          encoded_image[receive_lastIndex++] = z;
         }
         
-        image_data = base64_decode( (const unsigned char*)rcvdPayload, image_size, &outputLength);
+        image_data = base64_decode( (const unsigned char*)rcvdPayload, receive_lastIndex, &outputLength);
+
+        if (!receivingImage) { receive_lastIndex = 0;}
     }
 
     WiFiClient client = server.available(); // Listen for incoming clients
@@ -194,19 +204,23 @@ void loop() {
                             client.println(manage_html);
                         }
                         else if (header.indexOf("GET /lcd") != -1) {
-                            client.println(lcd_html);  
+                            client.println(lcd_html);
+                            client.write(image_data, outputLength);
                         }
                         else if (header.indexOf("GET /open") != -1) {
-                            JSONVar doormotor;
-                            doormotor["doormotor"] = String("OPEN");
-                            JSONVar state;
-                            state["state"] = doormotor;
-
-                            JSON.stringify(state).toCharArray(payload, 512);
+                            /*
+                            {
+                                "state" : {
+                                    "doormotor" : "OPEN"
+                                }
+                            }
+                            */
+                            String state(R"rawliteral({"state":{"doormotor":"OPEN"}})rawliteral");
+                            state.toCharArray(payload, 512);
 
                             Serial.println(payload);
                             
-                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                            if (hornbill->publish(pTOPIC_NAME, payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }
@@ -214,13 +228,30 @@ void loop() {
 
                             client.println(manage_html);
                         }
-                        else if (header.indexOf("GET /view_image") != -1) {
-                            client.write(image_data, outputLength);
-                        }
                         // until=* for changing password permanently
                         // POST /newpw=********&date=yyyy-mm-dd&time=hh:mm&lcd=n&tmp=k HTTP/1.1
                         // time becomes "" if the user changes pw permanently
                         else if (header.indexOf("POST /newpw") != -1) {
+                            /*
+                            {
+                                "state" : {
+                                    "reported" : {
+                                        "newpw" : 14159265
+                                        "time" : 202206102359
+                                        "lcd" : n
+                                        "tmp" : k
+                                    }
+                                }
+                            }
+                            */
+                            String state(R"rawliteral({"state":{"reported":{"newpw":")rawliteral");
+                            state = state 
+                                + parsePw(header) 
+                                + "\",\"time\":\"" + parseDate(header) + parseTime(header)
+                                + "\",\"lcd\":\"" + parseLcd(header)
+                                + "\",\"tmp\":\"" + getTmp(header)
+                                + "\"}}}";
+                            /*
                             JSONVar pwSettingValues;
                             pwSettingValues["newpw"] = parsePw(header);
                             pwSettingValues["time"] = parseDate(header) + parseTime(header);
@@ -230,12 +261,13 @@ void loop() {
                             reported["reported"] = pwSettingValues;
                             JSONVar state;
                             state["state"] = reported;
+                            */
 
-                            JSON.stringify(state).toCharArray(payload, 512);
+                            state.toCharArray(payload, 512);
 
                             Serial.println(payload);
                             
-                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                            if (hornbill->publish(pTOPIC_NAME, payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }
@@ -249,7 +281,7 @@ void loop() {
                             header.substring(header.indexOf("/newnum=") + 8, header.indexOf(" HTTP")).toCharArray(newnum, 14);
                             
                             /* TODO : set publish topic*/
-                            if (hornbill.publish("publish_topic", newnum) == 0) {
+                            if (hornbill->publish("publish_topic", newnum) == 0) {
                                 Serial.printf("Published : %s", newnum);
                             }
                             else { Serial.println("Please, dude. Why don't you publish?"); }
