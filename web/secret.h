@@ -20,11 +20,11 @@ String main_html = R"rawliteral(<!DOCTYPE html>
     <body style="background-color: #ededed; padding: 0; margin: 0; font-size: 16px;">
         <div><button class="button" id="btn_open" style="height: 120px; width: 95%;">Open</button></div>
         <div>
-            <button class="button2" id="btn_manage">Manage</button>
-            <button class="button2" id="btn_manage2">Manage2</button>
+            <button class="button2" id="btn_manage">pw change</button>
+            <button class="button2" id="btn_manage2">add admin</button>
         </div>
         <div>
-            <button class="button2" id="btn_lcd">lcd</button>
+            <button class="button2" id="btn_lcd">image & lcd</button>
             <button class="button2" id="btn_logout">logout</button>
         </div>
     </body>
@@ -47,23 +47,23 @@ String login_html = R"rawliteral(<!DOCTYPE html>
     </style>
 </head>
     <body style="background-color: #ededed; padding: 0; margin: 0;"> 
-        <div style="width: 780px; height: 550px; margin: 0 auto;">
+        <div style="width: 70%; height: 40%; margin: 0 auto;">
             <h2 style="width: 100%;">Login</h2>
-            <form style="width: 100%; height: 450px; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#" method="get">
+            <form style="width: 100%; height: 100%; background-color: #fff; padding: 60px; box-sizing: border-box;" action="#" method="get">
               <fieldset style="border: none;">
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginid">id</label>
-                <input style="width: 600px; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="text" id="loginid" placeholder="id">
+                <input style="width: 100%; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="text" id="loginid" placeholder="id">
                 <label style="display: block; font-size: 12px; color: #333; margin-bottom: 10px;" for="loginpw">password</label>
-                <input style="width: 600px; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="password" id="loginpw" placeholder="password">
+                <input style="width: 100%; display: block; height: 50px; margin-bottom: 25px; border: none; background-color: #ededed; padding: 0 20px; box-sizing: border-box;" type="password" id="loginpw" placeholder="password">
                 <ul style="width: 100%; text-align: right; margin-bottom: 60px;">
                   <li style="display: inline-block; height: 12px; line-height: 12px; list-style: none;"><a style="color: #333; font-size: 12px; position: relative; top: -2px; text-decoration: none;" href="#" onclick="do_it_yourself();">forgot id/pw?</a></li>  
                 </ul>
-                <button style="display: block; width: 220px; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="tryLogIn();">Login</button>
+                <button style="display: block; width: 50%; height: 50px; margin: 0 auto; border: none; background-color: #1673ea; color: #fff; font-size: 14px; cursor: pointer;" type="button" onclick="tryLogIn();">Login</button>
               </fieldset>
             </form>
         </div>
           <script>
-            function do_it_yourself(){alert("Please contact to manager : 010-0000-0000");}
+            function do_it_yourself(){alert("Please contact to manager : 010-8138-9633");}
             function tryLogIn(){
                 let id = document.getElementById('loginid').value;
                 let pw = document.getElementById('loginpw').value;
@@ -98,21 +98,32 @@ String manage_html = R"rawliteral(<!DOCTYPE html>
                 let v = document.getElementById("password").value;
                 let d = document.getElementById("date").value;
                 let t = document.getElementById("time").value;
-                
-                console.log("submited : /newpw="+v+'&date='+d+'&time='+t+'&lcd=0&tmp=1');
-                alert("Set!");
 
-                let response = await fetch('/newpw='+v+'&date='+d+'&time='+t+'&lcd=0&tmp=1', {
-                    method: 'POST',
-                    headers: {
-                      "Content-Type": "application/json;charset=UTF-8",
-                      },
-                    data: JSON.stringify({
-                        "y": "k"
-                    }),
-                })
+                if (d == '' || t == '') {
+                    let response = await fetch('/newpw='+v+'&date='+d+'&time='+t+'&lcd=0&tmp=1', {
+                        method: 'POST',
+                        headers: {
+                        "Content-Type": "application/json;charset=UTF-8",
+                        },
+                        data: JSON.stringify({
+                            "y": "k"
+                        }),
+                    })
+                }
+                else {
+                    let response = await fetch('/newpw='+v+'&date='+d+'&time='+t+'&lcd=0&tmp=2', {
+                        method: 'POST',
+                        headers: {
+                        "Content-Type": "application/json;charset=UTF-8",
+                        },
+                        data: JSON.stringify({
+                            "y": "k"
+                        }),
+                    })
+                }
                 let result = await response.json();
                 alert(result.message);
+                alert("Set!");
             }
 </script></body></html>)rawliteral";
 String manage2_html = R"rawliteral(
@@ -142,6 +153,8 @@ String manage2_html = R"rawliteral(
     <button id="btn" onclick="submit()" class="form-check" type="submit">submit</button>
     
     <script>
+        document.getElementById("btn").addEventListener('click', submit);
+
         var iptPhoneA = $("#phoneInputA");
 
         iptPhoneA.on("keyup", function(){
@@ -150,86 +163,80 @@ String manage2_html = R"rawliteral(
         }
         });
         
-        function submit(){
+        async function submit(){
             let v = document.getElementById("phoneInputA").value;
-            alert(v);
+            let response = await fetch('/newnum=' + v, {
+            method: 'POST',
+            headers: {
+            "Content-Type": "application/json;charset=UTF-8",
+            },
+            data: '{"y":"k"}',
+            })
         }
     </script></body></html>)rawliteral";
-String lcd_html = R"rawliteral(
-<!DOCTYPE html><head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-       h1 {
-         color: blue;
-         text-align: center;
-       }
-    </style>
+String lcd_html = R"rawliteral(<!DOCTYPE html><head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+     h1 {
+       color: blue;
+       text-align: center;
+     }
+  </style>
 </head>
-<body style="width:max-content">
-    <div text-align="left"; style="width: max-content">
-        <button onclick="location.href='/main';" style="background-color: #a5a5a5; font-size: 10px; border: none; padding: 8px 20px; text-decoration: none; margin: 2px; float: left;"><-</button>
-    </div>
-</body>
-
-<body style="background-color: #ededed;">
-    
-    <div class = "form-check">
-    <h1>message</h1>
-    <input class="check" type='checkbox'
-        name='message' 
-        value='1'
-        onclick='checkOnlyOne(this)'/> 11
-  <br />
-  <input class="check" type='checkbox' 
-        name='message' 
-        value='2' 
-        onclick='checkOnlyOne(this)'/> 22
-  <br />
-  <input class="check" type='checkbox' 
-        name='message' 
-        value='3' 
-        onclick='checkOnlyOne(this)'/> 33
-  <br />
-  <button id="submitbtn" type="button" class="btn btn-dark">submit</button>
-</div>
-
+<body style="width:max-content" style="background-color: #ededed;">
+  <div text-align="left"; style="width: max-content">
+      <button onclick="location.href='/main';" style="background-color: #a5a5a5; font-size: 10px; border: none; padding: 8px 20px; text-decoration: none; margin: 2px; float: left;"><-</button>
+  </div>
+  <div><img style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;" src="http://192.168.37.217/view_image"></div>
+  
+  
+  <div><input type="radio" id= "1" name="chk_info" value="I'm out of home. Sorry.">I'm out of home. Sorry.</div>
+  <div><input type="radio" id= "2" name="chk_info" value="Please put in front of door.">Please put in front of door.</div>
+  <div><input type="radio" id= "3" name="chk_info" value="Contact 010-8138-9633">Contact 010-8138-9633</div>
+  <div>
+      <input type="radio" id= "4" name="chk_info" value="Custom">
+      <input type="text" id="lcdInput" placeholder="message for lcd" maxlength="32">
+  </div>
+  <button id="btn" onclick="submit()" class="form-check" type="submit">submit</button>
+  
   <script>
-    document.getElementById("submitbtn").addEventListener('click', submit);
-    function checkOnlyOne(element) {
-    let selected = ' ';
-    const checkboxes 
-        = document.getElementsByName("message");
-    
-    checkboxes.forEach((cb) => {
-      cb.checked = false;
-      selected = cb.value;
-    })
-    
-    element.checked = true;
-  }
+
+  document.getElementById("submitbtn").addEventListener('click', submit);
 
   async function submit(){
-    let selected = ' ';
-    const checkboxes = document.getElementsByName("message");
-    checkboxes.forEach((cb) => {
-      if (cb.checked) {selected = cb.value;}
-    })
-
-    if (selected == ' ') { alert("Check something!"); }
-    else { 
-      console.log("submited : " + selected);
-      let response = await fetch('/newpw=0&date=0&time=0&lcd='+selected+'&tmp=0', {
+    if (document.getElementById('4').checked == true) {
+        let msg = decodeURI(document.getElementById("lcdInput").value);
+        if (msg == '') { alert("Write something!"); }
+        else { 
+          console.log("submited : " + msg);
+          let response = await fetch('/newpw=0&date=0&time=0&lcd="'+msg+'"&tmp=0', {
+          method: 'POST',
+          headers: {
+          "Content-Type": "application/json;charset=UTF-8",
+          },
+          data: '{"y":"k"}',
+          })
+        }
+    }
+    else {
+      var msg = "";
+      if (document.getElementById('1').checked == true) {msg = "I'm out of home. Sorry.";}
+      else if (document.getElementById('2').checked == true) {msg = "Please put in front of the door.";}
+      else if (document.getElementById('3').checked == true) {msg = "Contact 010-8138-9633";}
+      else {msg = 'what the';}
+      console.log("submited : " + msg);
+      let response = await fetch('/newpw=0&date=0&time=0&lcd="'+msg+'"&tmp=0', {
         method: 'POST',
         headers: {
-          "Content-Type": "application/json;charset=UTF-8",
+        "Content-Type": "application/json;charset=UTF-8",
         },
         data: '{"y":"k"}',
       })
-
-      let result = await response.json();
-      alert(result.message);
     }
+
+    let result = await response.json();
+    alert(result.message);
   }</script></body></html>)rawliteral";

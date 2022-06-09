@@ -18,7 +18,7 @@ char* rcvdPayload;
 
 unsigned char bmpHeader[BMP::headerSize];
 
-char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock/shadow/update";
+char pTOPIC_NAME[] = "$aws/things/ESP32_Doorlock_Data/shadow/update";
 char sTOPIC_IMAGE[] = "web/image";
 /* Data below are defined in 'WiFiData.h' and 'connection_data.h' 
  *
@@ -40,23 +40,23 @@ char payload[100];
 unsigned char* image_data;
 size_t outputLength;
 
+String ip;
+
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   // set rcvdPayload(recieved payload) to payload
   rcvdPayload = payLoad;
   Serial.println("Receiving...");
-  playNote(22,3);
-  playNote(18,2);
-  playNote(0,-1);
   msgReceived = 1;
+
 }
 
-int getTmp(String str) {
+String getTmp(String str) {
     int idx_start = str.indexOf("tmp=") + 4;
-    return str.substring(idx_start, idx_start+1).toInt();
+    return str.substring(idx_start, idx_start+1);
 }
 
 String parsePw(String str) {
-    if (!getTmp(str)) {
+    if (getTmp(str) == "0") {
         return String("");
     }
     int idx_start = str.indexOf("newpw=") + 6;
@@ -66,7 +66,7 @@ String parsePw(String str) {
 
 // yyyy-mm-dd
 String parseDate(String str) {
-    if (!getTmp(str)) {
+    if (getTmp(str) == "0") {
         return String("");
     }
     int idx_start = str.indexOf("date=") + 5;
@@ -78,7 +78,7 @@ String parseDate(String str) {
 
 // hh:mm
 String parseTime(String str) {
-    if (!getTmp(str)) {
+    if (getTmp(str) == "0") {
         return String("");
     }
     int idx_start = str.indexOf("time=") + 5;
@@ -89,12 +89,12 @@ String parseTime(String str) {
 }
 
 String parseLcd(String str) {
-    if (getTmp(str)) {
+    if (getTmp(str) != "0") {
         return String("");
     }
 
-    int idx_start = str.indexOf("lcd=") + 4;
-    return str.substring(idx_start, str.indexOf("&tmp="));
+    int idx_start = str.indexOf("lcd=") + 4 + 3; // abandoning %22
+    return str.substring(idx_start, str.indexOf("&tmp=") - 3);
 }
 
 
@@ -121,6 +121,7 @@ void setup() {
     }
     Serial.println("\nConnected to WiFi");
     Serial.println("IP address: ");
+    ip = WiFi.localIP().toString();
     Serial.println(WiFi.localIP());
 
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
@@ -151,6 +152,20 @@ void loop() {
         msgReceived = 0;  // Semaphore needed if it's multiprocessor
         Serial.print("Image Received.");
         
+        playNote(22,3);
+        playNote(18,2);
+        playNote(0,-1);
+        JSONVar pl;
+        pl["address"] = ip + "/lcd";
+        pl["requestcode"] = 4;
+        JSON.stringify(pl).toCharArray(payload, 512);
+        Serial.println(payload);
+                                  
+        if (hornbill.publish("web/url", payload) == 0) {
+        Serial.print("Published : ");
+          Serial.println(payload);
+        }
+        else {Serial.println("Shit.");}
         // rcvdPayload has {"base64image":"~~~"}
         // index 16 ~ indexOf('\"')
 
@@ -184,7 +199,7 @@ void loop() {
                     if (currentLine.length() == 0) {
                     // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
                     // and a content-type so the client knows what's coming, then a blank line: 
-                    if (header.indexOf("GET /view_image") != -1) {
+                        if (header.indexOf("GET /view_image") != -1) {
                             client.println("HTTP/1.1 200 OK");
                             client.println("Content-type:image/bmp");
                             client.println();
@@ -212,16 +227,9 @@ void loop() {
                             client.println(lcd_html);  
                         }
                         else if (header.indexOf("GET /open") != -1) {
-                            JSONVar doormotor;
-                            doormotor["doormotor"] = String("OPEN");
-                            JSONVar state;
-                            state["state"] = doormotor;
-
-                            JSON.stringify(state).toCharArray(payload, 512);
-
-                            Serial.println(payload);
                             
-                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                            
+                            if (hornbill.publish("esp32/doorset", "{\"door\":0}") == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }
@@ -237,7 +245,7 @@ void loop() {
                             pwSettingValues["newpw"] = parsePw(header);
                             pwSettingValues["time"] = parseDate(header) + parseTime(header);
                             pwSettingValues["lcd"] = parseLcd(header);
-                            pwSettingValues["tmp"] = getTmp(header);
+                            pwSettingValues["temp"] = getTmp(header);
                             JSONVar reported;
                             reported["reported"] = pwSettingValues;
                             JSONVar state;
@@ -247,7 +255,7 @@ void loop() {
 
                             Serial.println(payload);
                             
-                            if (hornbill.publish(pTOPIC_NAME, payload) == 0) {
+                            if (hornbill.publish("$aws/things/ESP32_Doorlock/shadow/update", payload) == 0) {
                                 Serial.print("Published : ");
                                 Serial.println(payload);
                             }
@@ -260,8 +268,7 @@ void loop() {
                             char newnum[14];
                             header.substring(header.indexOf("/newnum=") + 8, header.indexOf(" HTTP")).toCharArray(newnum, 14);
                             
-                            /* TODO : set publish topic*/
-                            if (hornbill.publish("publish_topic", newnum) == 0) {
+                            if (hornbill.publish(pTOPIC_NAME, newnum) == 0) {
                                 Serial.printf("Published : %s", newnum);
                             }
                             else { Serial.println("Please, dude. Why don't you publish?"); }
@@ -269,7 +276,6 @@ void loop() {
                         else {
                             client.println(login_html);
                         }
-
 a:
                         // The HTTP response ends with another blank line
                         client.println();
