@@ -19,6 +19,7 @@ unsigned long preMil = 0;
 const long intMil = 5000;
 static const int servoPin = 33; 
 int open_count = 0 ;
+int min_count = 0;
 unsigned long timeVal;
 unsigned long readTime = 0;
 int door_error = 0; // 문을 강제로 열려고 했을때
@@ -45,10 +46,27 @@ void MOTOR(void){ // 문을 모터로 열어줬다가 문이 닫히면 문을 �
   }Serial.println("문이 열렸습니다.");
   open_count = 0;
   while(open_count < 3000 && digitalRead(door_butten) == 1){ //문 닫았을때
+    min_count ++;
+    if(min_count == 60000){ // 문이 1분동안 열려있을 때 
+      JSONVar state;
+      state["door"] = 3; //esp32/doorsensor
+      JSON.stringify(state).toCharArray(payload, 512);
+      Serial.println("1분 경과");
+      timeVal = millis();
+      if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
+        Serial.print("Publish Message: ");
+        Serial.println(payload);
+      }
+      else { Serial.println("Oops, Publish Failed."); 
+      min_count = 59999;
+      }
+    }
     delay(1);
     if(digitalRead(Door_sensor)==1)open_count ++;
     if(digitalRead(Door_sensor)==0)open_count = 0;
-  }Serial.println("문이 닫혔습니다.");
+  }
+  Serial.println("문이 닫혔습니다.");
+  min_count = 0;
   open_count = 0;
   servo1.write(100);
   while(open_count < 500){ // 모터를 센서에 감지될 때 까지 닫아줌
@@ -112,6 +130,7 @@ void loop() {
     JSONVar state = myObj["state"];
     String doormotor = (const char*) state["doormotor"]; // esp32/doorset 
     if (doormotor == "OPEN"){
+      Serial.println("OPEN");
       MOTOR();
       door_error = 0;
     }
@@ -129,23 +148,5 @@ void loop() {
       else { Serial.println("Oops, Publish Failed."); }
       delay(1000);
     }
-  }
-  if(digitalRead(Door_sensor) == 0){ // 문이 1분동안 열려있으면 문이 열려있다고 문자를 보냄
-    if(millis()-timeVal >= 60000){
-    readTime = millis()/60000;
-    JSONVar state;
-    state["door"] = 3; //esp32/doorsensor
-    JSON.stringify(state).toCharArray(payload, 512);
-    Serial.println("1분 경과");
-    timeVal = millis();
-    if (MOTORIOT.publish(pTOPIC_NAME, payload) == 0) {
-      Serial.print("Publish Message: ");
-      Serial.println(payload);
-    }
-    else { Serial.println("Oops, Publish Failed."); }
-    }
-  }
-  if(digitalRead(Door_sensor) == 1){
-    timeVal = millis();
   }
 }
