@@ -29,9 +29,6 @@ const char* ssid = "-";
 const char* password = "-!";
 char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 
-//const char* ssid = "-";
-//const char* password = "-";
-//char HOST_ADDRESS[] = "acj2gilk7nyok-ats.iot.ap-northeast-2.amazonaws.com";
 WiFiServer server(80);
 
 // Create An LCD Object. Signals: [ RS, EN, D4, D5, D6, D7 ]
@@ -291,10 +288,7 @@ void setup() {
   currentButtonState = digitalRead(buttonPin);
 
   //초기값 지정
-//  EEPROM.write(17, 0XAA);
-//  EEPROM.write(18, 0X55);
-//  EEPROM.commit();
-//  save_password("12345678", 8);
+
 
   wifi_aws_Connect();
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer); 
@@ -329,11 +323,6 @@ void loop() {
   currentButtonState = digitalRead(buttonPin);
   keyPressed = customKeypad.getKey();
   printLocalTime();
-//  if(millis()-timeVal2 >= 1000){
-//    shadow_publish();
-//    timeVal2 = millis();짐
-//
-//  }
   if(millis()-timeVal >= 60000){
     readTime = millis()/60000;
     Serial.println("1분 경과, 현재 시간: ");
@@ -399,10 +388,7 @@ void loop() {
           Serial.println(timeset);
           Serial.println(temp);
           Serial.println("---------------------------");
-          // password length is saved at EEPROM[16]
-          // if there's some password saved, EEPROM[17] == 0XAA && EEPROM[18] == 0X55       
-  
-          // lcd 메시지 출력 => temp = 0 일때
+         // lcd 메시지 출력 => temp = 0 일때
           // temp = 1 => 비밀번호 영구 변경
           // temp = 2 임시 비밀번호 변경
           if (temp == "0")
@@ -480,13 +466,7 @@ void loop() {
             doorPassword = newpw;
             Serial.println(doorPassword);
                       
-           }
-           
-        //}
-        
-   
-      
-        
+           }          
       }
       // 임시 비밀번호 시간이 다 되면
       if (isTemp && check_time(tempTimeSet)==true ){
@@ -546,7 +526,6 @@ void loop() {
                 Serial.println(doorPassword);
                 Serial.println(inputPassword);
                 
-
                 if (count >= 3){
                   doorState["door"] = door;
                   JSON.stringify(doorState).toCharArray(payload, 512);
@@ -570,9 +549,7 @@ void loop() {
             }
           } 
         }
-      }
-
-            
+      }        
   } 
 }
 
