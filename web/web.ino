@@ -44,8 +44,11 @@ String ip;
 
 void mySubCallBackHandler(char* topicName, int payloadLen, char* payLoad) {
   // set rcvdPayload(recieved payload) to payload
+  Serial.printf("\n////\n\nPayload Address : %p\n\n////\n", payload);
   rcvdPayload = payLoad;
   Serial.println("Receiving...");
+  image_data = base64_decode( (const unsigned char*)rcvdPayload, payloadLen, &outputLength);
+  Serial.println("Decoded");
   msgReceived = 1;
 
 }
@@ -100,7 +103,7 @@ String parseLcd(String str) {
 
 void setup() {
     Serial.begin(115200);
-    BMP::construct16BitHeader(bmpHeader, 160, 120);
+    BMP::construct16BitHeader(bmpHeader, 80, 60);
     ledcAttachPin(buzPin, ledChannel);
 
     // Initialize WIFI
@@ -159,24 +162,15 @@ void loop() {
         pl["address"] = ip + "/lcd";
         pl["requestcode"] = 4;
         JSON.stringify(pl).toCharArray(payload, 512);
-        Serial.println(payload);
                                   
         if (hornbill.publish("web/url", payload) == 0) {
         Serial.print("Published : ");
           Serial.println(payload);
         }
         else {Serial.println("Shit.");}
-        // rcvdPayload has {"base64image":"~~~"}
-        // index 16 ~ indexOf('\"')
+        // rcvdPayload is NOT JSON
 
-        int image_size = 0;
-        
-        // copy that.
-        for (int j = 16, z = -1; (z = rcvdPayload[j++]) != 34;/*"*/) {
-          rcvdPayload[image_size++] = z;
-        }
-        
-        image_data = base64_decode( (const unsigned char*)rcvdPayload, image_size, &outputLength);
+        Serial.println(rcvdPayload);
     }
 
     WiFiClient client = server.available(); // Listen for incoming clients
@@ -224,7 +218,7 @@ void loop() {
                             client.println(manage_html);
                         }
                         else if (header.indexOf("GET /lcd") != -1) {
-                            client.println(lcd_html);  
+                            client.print(lcd_html);
                         }
                         else if (header.indexOf("GET /open") != -1) {
                             

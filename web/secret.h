@@ -24,7 +24,7 @@ String main_html = R"rawliteral(<!DOCTYPE html>
             <button class="button2" id="btn_manage2">add admin</button>
         </div>
         <div>
-            <button class="button2" id="btn_lcd">image & lcd</button>
+            <button class="button2" id="btn_lcd">image & message</button>
             <button class="button2" id="btn_logout">logout</button>
         </div>
     </body>
@@ -190,7 +190,9 @@ String lcd_html = R"rawliteral(<!DOCTYPE html><head>
   <div text-align="left"; style="width: max-content">
       <button onclick="location.href='/main';" style="background-color: #a5a5a5; font-size: 10px; border: none; padding: 8px 20px; text-decoration: none; margin: 2px; float: left;"><-</button>
   </div>
-  <div><img style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;" src="http://192.168.37.217/view_image"></div>
+  <div>
+   <img width=50% height=20% style="display: block;-webkit-user-select: none;margin: auto;background-color: hsl(0, 0%, 90%);transition: background-color 300ms;" src="http://192.168.37.217/view_image">
+  </div>
   
   
   <div><input type="radio" id= "1" name="chk_info" value="I'm out of home. Sorry.">I'm out of home. Sorry.</div>
